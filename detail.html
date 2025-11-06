@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detail Daftar Tunggu</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <h1 class="header-title">⚡ DETAIL DAFTAR TUNGGU ⚡</h1>
+  <h2 id="judul" class="detail-title"></h2>
+
+  <div id="detailContainer" class="detail-container"></div>
+
+  <script src="config.js"></script>
+  <script>
+    async function loadDetail() {
+      const params = new URLSearchParams(window.location.search);
+      const kategori = params.get('kategori');
+      document.getElementById('judul').textContent = `Kategori: ${kategori}`;
+
+      const range = 'DAFTAR TUNGGU!A1:L3145';
+      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+
+      const res = await fetch(url);
+      const data = await res.json();
+      const rows = data.values || [];
+
+      const header = rows[0];
+      const dataRows = rows.slice(1).filter(r => r[11] === kategori);
+
+      const container = document.getElementById('detailContainer');
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>ULP</th>
+              <th>Bulan Kebutuhan</th>
+              <th>Prioritas</th>
+              <th>Tarif</th>
+              <th>Daya Lama</th>
+              <th>Daya Baru</th>
+              <th>Jumlah Pelanggan</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataRows.map((r, i) => `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${r[2] || '-'}</td>
+                <td>${r[3] || '-'}</td>
+                <td>${r[4] || '-'}</td>
+                <td>${r[6] || '-'}</td>
+                <td>${r[7] || '-'}</td>
+                <td>${r[8] || '-'}</td>
+                <td>${r[9] || '-'}</td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    window.onload = loadDetail;
+  </script>
+</body>
+</html>
