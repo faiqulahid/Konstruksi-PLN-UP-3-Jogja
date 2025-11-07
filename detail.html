@@ -1,69 +1,117 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Detail Daftar Tunggu</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Data</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <h1 class="header-title">⚡ DETAIL DAFTAR TUNGGU ⚡</h1>
-  <h2 id="judul" class="detail-title"></h2>
+  <h1 class="header">⚡ DETAIL MATERIAL PLN ⚡</h1>
 
-  <div id="detailContainer" class="detail-container"></div>
+  <div style="text-align:center;">
+    <h2 id="judulUtama"></h2>
+    <h3 id="subJudul" style="color:#555; margin-top:-10px;"></h3>
+  </div>
+
+  <div style="max-width:95%; margin:auto;">
+    <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
+      <thead style="background:#007AC3; color:white;">
+        <tr id="tableHeader"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
   <script src="config.js"></script>
   <script>
     async function loadDetail() {
       const params = new URLSearchParams(window.location.search);
-      const kategori = params.get('kategori');
-      document.getElementById('judul').textContent = `Kategori: ${kategori}`;
+      const kategori = params.get("kategori");
+      const material = params.get("material");
+      const kode = params.get("kode");
 
-      const range = 'DAFTAR TUNGGU!A1:L3145';
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+      const judul = document.getElementById("judulUtama");
+      const sub = document.getElementById("subJudul");
+      const tbody = document.querySelector("#detailTable tbody");
+      const thead = document.querySelector("#tableHeader");
 
-      const res = await fetch(url);
-      const data = await res.json();
-      const rows = data.values || [];
+      tbody.innerHTML = "";
 
-      const header = rows[0];
-      const dataRows = rows.slice(1).filter(r => r[11] === kategori);
+      // ======== jika dari DAFTAR TUNGGU ========
+      if (kategori) {
+        judul.textContent = kategori;
+        sub.textContent = "Daftar Pelanggan";
+        const range = "DAFTAR TUNGGU!A2:L3145";
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const values = data.values || [];
 
-      const container = document.getElementById('detailContainer');
-      container.innerHTML = `
-        <table>
-          <thead>
-            <tr>
-              <th>No</th>
-              <th>ULP</th>
-              <th>Bulan Kebutuhan</th>
-              <th>Prioritas</th>
-              <th>Tarif</th>
-              <th>Daya Lama</th>
-              <th>Daya Baru</th>
-              <th>Jumlah Pelanggan</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${dataRows.map((r, i) => `
-              <tr>
-                <td>${i + 1}</td>
-                <td>${r[2] || '-'}</td>
-                <td>${r[3] || '-'}</td>
-                <td>${r[4] || '-'}</td>
-                <td>${r[6] || '-'}</td>
-                <td>${r[7] || '-'}</td>
-                <td>${r[8] || '-'}</td>
-                <td>${r[9] || '-'}</td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      `;
+        thead.innerHTML = `
+          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th><th>Tarif</th>
+          <th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
+        `;
+
+        let no = 1;
+        values.forEach(r => {
+          if (r[11] === kategori) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${no++}</td>
+              <td>${r[2] || ''}</td>
+              <td>${r[3] || ''}</td>
+              <td>${r[4] || ''}</td>
+              <td>${r[6] || ''}</td>
+              <td>${r[7] || ''}</td>
+              <td>${r[8] || ''}</td>
+              <td>${r[9] || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          }
+        });
+      }
+
+      // ======== jika dari STOCK MATERIAL ========
+      if (material && kode) {
+        judul.textContent = material;
+        sub.textContent = `Kode: ${kode}`;
+        const range = "DETAIL STOCK MATERIAL!B2:Q";
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const values = data.values || [];
+
+        thead.innerHTML = `
+          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
+          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th>
+          <th>Jumlah Pelanggan</th><th>Keterangan</th>
+        `;
+
+        let no = 1;
+        values.forEach(row => {
+          const [b, c, d, f, h, i, j, p, q] = row;
+          if (b && b.trim() === kode.trim()) {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${no++}</td>
+              <td>${c || ''}</td>
+              <td>${d || ''}</td>
+              <td>${f || ''}</td>
+              <td>${h || ''}</td>
+              <td>${i || ''}</td>
+              <td>${j || ''}</td>
+              <td>${p || ''}</td>
+              <td>${q || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          }
+        });
+      }
     }
 
-    window.onload = loadDetail;
+    loadDetail();
   </script>
 </body>
 </html>
