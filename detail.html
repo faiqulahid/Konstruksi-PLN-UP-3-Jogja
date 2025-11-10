@@ -3,132 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detail Data</title>
+  <title>Dashboard Material PLN</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <h1 class="header">⚡ DETAIL MATERIAL PLN ⚡</h1>
+  <h1 class="header">⚡ DASHBOARD MONITORING MATERIAL PLN ⚡</h1>
 
-  <div style="text-align:center;">
-    <h2 id="judulUtama"></h2>
-    <h3 id="subJudul" style="color:#555; margin-top:-10px;"></h3>
-    <button onclick="window.location.href='index.html'" 
-      style="background:#007AC3;color:white;padding:10px 20px;border:none;
-      border-radius:8px;cursor:pointer;margin-top:10px;">⬅ Kembali ke Dashboard</button>
+  <div class="menu">
+    <button onclick="loadDashboard('daftarTunggu')" class="nav-btn">Daftar Tunggu</button>
+    <button onclick="loadDashboard('stockMaterial')" class="nav-btn">Stock Material</button>
+    <button onclick="loadDashboard('materialKurang')" class="nav-btn">Material Kurang</button>
   </div>
 
-  <div style="max-width:95%; margin:auto; margin-top:20px;">
-    <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
-      <thead style="background:#007AC3; color:white;">
-        <tr id="tableHeader"></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <div id="chartContainer" class="card-container"></div>
 
   <script src="config.js"></script>
-  <script>
-    async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const kategori = params.get("kategori");
-      const material = params.get("material");
-      const kode = params.get("kode");
-
-      const judul = document.getElementById("judulUtama");
-      const sub = document.getElementById("subJudul");
-      const tbody = document.querySelector("#detailTable tbody");
-      const thead = document.querySelector("#tableHeader");
-
-      tbody.innerHTML = "";
-
-      // ======== DETAIL DARI DAFTAR TUNGGU ========
-      if (kategori) {
-        judul.textContent = kategori;
-        sub.textContent = "Daftar Pelanggan";
-        const range = "DAFTAR TUNGGU!A2:L3145";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
-
-        thead.innerHTML = `
-          <th>No</th>
-          <th>ULP</th>
-          <th>Bulan Kebutuhan</th>
-          <th>Prioritas</th>
-          <th>Tarif</th>
-          <th>Daya Lama</th>
-          <th>Daya Baru</th>
-          <th>Jumlah Pelanggan</th>
-        `;
-
-        let no = 1;
-        values.forEach(r => {
-          if (r[11] === kategori) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${no++}</td>
-              <td>${r[2] || ''}</td>
-              <td>${r[3] || ''}</td>
-              <td>${r[4] || ''}</td>
-              <td>${r[6] || ''}</td>
-              <td>${r[7] || ''}</td>
-              <td>${r[8] || ''}</td>
-              <td>${r[9] || ''}</td>
-            `;
-            tbody.appendChild(tr);
-          }
-        });
-      }
-
-      // ======== DETAIL DARI STOCK MATERIAL ========
-      if (material && kode) {
-        judul.textContent = material;
-        sub.textContent = `Kode: ${kode}`;
-        const range = "DETAIL STOCK MATERIAL!A1:Q";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
-
-        // Header tabel
-        thead.innerHTML = `
-          <th>No</th>
-          <th>No SPB</th>
-          <th>Vendor</th>
-          <th>Awal</th>
-          <th>Akhir</th>
-          <th>Jumlah SPB</th>
-          <th>Jumlah Diterima</th>
-          <th>Tanggal Terima</th>
-          <th>Nilai SPB</th>
-        `;
-
-        let no = 1;
-        values.forEach(row => {
-          // Cek kolom F (index 5) berisi kode material
-          const kodeMaterial = row[5];
-          if (kodeMaterial && kodeMaterial.trim() === kode.trim()) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${no++}</td>
-              <td>${row[1] || ''}</td>  <!-- No SPB -->
-              <td>${row[2] || ''}</td>  <!-- Vendor -->
-              <td>${row[3] || ''}</td>  <!-- Awal -->
-              <td>${row[4] || ''}</td>  <!-- Akhir -->
-              <td>${row[8] || ''}</td>  <!-- Jumlah SPB -->
-              <td>${row[9] || ''}</td>  <!-- Jumlah Diterima -->
-              <td>${row[10] || ''}</td> <!-- Tanggal Terima -->
-              <td>${row[16] || ''}</td> <!-- Nilai SPB -->
-            `;
-            tbody.appendChild(tr);
-          }
-        });
-      }
-    }
-
-    loadDetail();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
