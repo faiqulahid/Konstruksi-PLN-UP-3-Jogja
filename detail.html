@@ -29,8 +29,8 @@
     async function loadDetail() {
       const params = new URLSearchParams(window.location.search);
       const kategori = params.get("kategori");
-      const material = params.get("material");
       const kode = params.get("kode");
+      const nama = params.get("nama");
 
       const judul = document.getElementById("judulUtama");
       const sub = document.getElementById("subJudul");
@@ -39,7 +39,7 @@
 
       tbody.innerHTML = "";
 
-      // ==================== DARI DAFTAR TUNGGU ====================
+      // ======== dari DAFTAR TUNGGU ========
       if (kategori) {
         judul.textContent = kategori;
         sub.textContent = "Daftar Pelanggan";
@@ -73,10 +73,10 @@
         });
       }
 
-      // ==================== DARI STOCK MATERIAL ====================
-      if (material && kode) {
-        judul.textContent = material;
-        sub.textContent = `Kode: ${kode}`;
+      // ======== dari STOCK MATERIAL ========
+      if (kode) {
+        judul.textContent = nama || "Detail Material";
+        sub.textContent = `Kode Material: ${kode}`;
 
         const range = "DETAIL STOCK MATERIAL!A2:Q";
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
@@ -85,29 +85,15 @@
         const values = data.values || [];
 
         thead.innerHTML = `
-          <th>No</th>
-          <th>No SPB (B)</th>
-          <th>Vendor (C)</th>
-          <th>Awal (D)</th>
-          <th>Akhir (E)</th>
-          <th>Jumlah (I)</th>
-          <th>Jumlah Diterima (J)</th>
-          <th>Tanggal Terima (K)</th>
-          <th>Nilai SPB (Q)</th>
+          <th>No</th><th>Nomor SPB</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
+          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th><th>Keterangan</th>
         `;
 
         let no = 1;
-        const hasil = values.filter(row => (row[5] || "").trim() === kode.trim()); // kolom F index = 5
-
-        if (hasil.length === 0) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td colspan="9" style="color:red; text-align:center; padding:10px;">
-              ⚠️ Tidak ada data ditemukan untuk kode ${kode}
-            </td>`;
-          tbody.appendChild(tr);
-        } else {
-          hasil.forEach(row => {
+        values.forEach(row => {
+          // kolom B = Nomor SPB, kolom F = kode material
+          const kodeMaterial = row[5]; // kolom F
+          if (kodeMaterial && kodeMaterial.trim() === kode.trim()) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${no++}</td>
@@ -115,13 +101,20 @@
               <td>${row[2] || ''}</td>
               <td>${row[3] || ''}</td>
               <td>${row[4] || ''}</td>
+              <td>${row[6] || ''}</td>
+              <td>${row[7] || ''}</td>
               <td>${row[8] || ''}</td>
-              <td>${row[9] || ''}</td>
-              <td>${row[10] || ''}</td>
+              <td>${row[15] || ''}</td>
               <td>${row[16] || ''}</td>
             `;
             tbody.appendChild(tr);
-          });
+          }
+        });
+
+        if (no === 1) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `<td colspan="10">⚠️ Tidak ada data ditemukan untuk kode ${kode}</td>`;
+          tbody.appendChild(tr);
         }
       }
     }
