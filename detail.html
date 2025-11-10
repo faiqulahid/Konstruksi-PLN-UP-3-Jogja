@@ -1,161 +1,31 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detail Semua Material</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f4f4f4;
-      color: #333;
-    }
-    h1 {
-      color: #007bff;
-      text-align: center;
-    }
-    h2 {
-      color: #333;
-      margin-top: 30px;
-      background: #e9f2ff;
-      padding: 10px;
-      border-radius: 5px;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      background: white;
-    }
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: left;
-    }
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f9f9f9;
-    }
-    .material-section {
-      margin-bottom: 40px;
-    }
-    .btn-back {
-      display: inline-block;
-      margin-top: 20px;
-      padding: 10px 15px;
-      background-color: #007bff;
-      color: white;
-      text-decoration: none;
-      border-radius: 5px;
-    }
-    .btn-back:hover {
-      background-color: #0056b3;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detail Data</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <h1>Detail Semua Material</h1>
-  <div id="dataContainer">Memuat data...</div>
-  <a href="index.html" class="btn-back">← Kembali</a>
+  <h1 class="header">⚡ DETAIL MATERIAL PLN ⚡</h1>
 
-  <script type="module">
-    import { CONFIG } from "./config.js";
+  <div style="text-align:center;">
+    <h2 id="judulUtama"></h2>
+    <h3 id="subJudul" style="color:#555; margin-top:-10px;"></h3>
+  </div>
 
-    const container = document.getElementById("dataContainer");
+  <div style="max-width:95%; margin:auto;">
+    <button onclick="history.back()" class="back-btn">⬅️ Kembali</button>
+    <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
+      <thead style="background:#007AC3; color:white;">
+        <tr id="tableHeader"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 
-    async function loadData() {
-      try {
-        // Ambil data dari kedua sheet
-        const [stockRes, detailRes] = await Promise.all([
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/STOCK%20MATERIAL?key=${CONFIG.API_KEY}`),
-          fetch(`https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/DETAIL%20STOCK%20MATERIAL?key=${CONFIG.API_KEY}`)
-        ]);
-
-        const stockData = await stockRes.json();
-        const detailData = await detailRes.json();
-
-        const stockRows = (stockData.values || []).slice(1); // hapus header
-        const detailRows = (detailData.values || []).slice(1);
-
-        if (stockRows.length === 0) {
-          container.innerHTML = "<p>Tidak ada data material di STOCK MATERIAL.</p>";
-          return;
-        }
-
-        let html = "";
-
-        // Loop setiap material di STOCK MATERIAL
-        stockRows.forEach(stock => {
-          const nama = stock[0] || "-";
-          const kode = stock[1] || "-";
-          const stok = stock[2] || "0";
-          const belum = stock[3] || "0";
-
-          // Filter detail berdasarkan kode material (kolom F = index 5)
-          const detailFiltered = detailRows.filter(r => r[5] && r[5].trim() === kode.trim());
-
-          html += `
-            <div class="material-section">
-              <h2>${nama} (Kode: ${kode})</h2>
-              <p><b>Stok:</b> ${stok} | <b>Belum Datang:</b> ${belum}</p>
-          `;
-
-          if (detailFiltered.length === 0) {
-            html += `<p style="color:#888;">Tidak ada data detail untuk material ini.</p></div>`;
-            return;
-          }
-
-          // Tambahkan tabel detailnya
-          html += `
-            <table>
-              <thead>
-                <tr>
-                  <th>No</th>
-                  <th>Nomor SPB</th>
-                  <th>Vendor Pelaksana</th>
-                  <th>Awal</th>
-                  <th>Akhir</th>
-                  <th>Jumlah SPB</th>
-                  <th>Jumlah Diterima</th>
-                  <th>Tgl Terima</th>
-                  <th>Nilai SPB</th>
-                </tr>
-              </thead>
-              <tbody>
-          `;
-
-          detailFiltered.forEach((row, i) => {
-            html += `
-              <tr>
-                <td>${i + 1}</td>
-                <td>${row[1] || "-"}</td>
-                <td>${row[2] || "-"}</td>
-                <td>${row[3] || "-"}</td>
-                <td>${row[4] || "-"}</td>
-                <td>${row[8] || "-"}</td>
-                <td>${row[9] || "-"}</td>
-                <td>${row[10] || "-"}</td>
-                <td>${row[16] || "-"}</td>
-              </tr>
-            `;
-          });
-
-          html += "</tbody></table></div>";
-        });
-
-        container.innerHTML = html;
-
-      } catch (error) {
-        console.error("Error memuat data:", error);
-        container.innerHTML = `<p style="color:red;">Terjadi kesalahan: ${error.message}</p>`;
-      }
-    }
-
-    loadData();
-  </script>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
