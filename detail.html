@@ -1,169 +1,30 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detail Stock Material</title>
-  <link rel="stylesheet" href="style.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-      background-color: #f9fafb;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 15px;
-    }
-
-    h1 {
-      font-size: 1.6em;
-      color: #333;
-    }
-
-    #btn-kembali {
-      background-color: #007bff;
-      color: white;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.3s;
-    }
-
-    #btn-kembali:hover {
-      background-color: #0056b3;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-      background: white;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
-    }
-
-    th, td {
-      border: 1px solid #ddd;
-      padding: 8px;
-      text-align: center;
-    }
-
-    th {
-      background-color: #007bff;
-      color: white;
-    }
-
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-
-    #kode-material {
-      color: #555;
-    }
-  </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Detail Data</title>
 </head>
 <body>
-  <header>
-    <div>
-      <h1 id="judul-material">📦 Detail Stock Material</h1>
-      <p id="kode-material"></p>
-    </div>
-    <button id="btn-kembali" onclick="goBack()">← Kembali</button>
-  </header>
+  <h1>Memuat Data...</h1>
 
-  <main>
-    <div id="tabel-container">
-      <table id="detail-tabel">
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Nomor SPB</th>
-            <th>Vendor Pelaksana</th>
-            <th>Awal</th>
-            <th>Akhir</th>
-            <th>Jumlah SPB</th>
-            <th>Jumlah Diterima</th>
-            <th>Tgl Terima</th>
-            <th>Nilai SPB</th>
-          </tr>
-        </thead>
-        <tbody id="detail-body">
-          <tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </main>
+  <div id="data-container"></div>
 
-  <!-- Script Config harus dipanggil lebih dulu -->
-  <script src="./config.js"></script>
+  <script type="module">
+    import { CONFIG } from './config.js';
 
-  <script>
-    const { API_KEY, SHEET_ID } = CONFIG;
+    const sheetId = CONFIG.SHEET_ID;
+    const apiKey = CONFIG.API_KEY;
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?ranges=Sheet1!A1:Z100&key=${apiKey}`;
 
-    // Ambil kode material dari URL
-    const params = new URLSearchParams(window.location.search);
-    const kodeMaterial = params.get('kode');
-    document.getElementById("kode-material").textContent = `Kode Material: ${kodeMaterial}`;
-
-    // Fungsi tombol kembali
-    function goBack() {
-      if (document.referrer) {
-        window.history.back();
-      } else {
-        // Jika user langsung buka halaman ini (tanpa riwayat)
-        window.location.href = "index.html";
-      }
+    async function loadData() {
+      const res = await fetch(url);
+      const data = await res.json();
+      console.log(data);
+      document.getElementById('data-container').innerText = JSON.stringify(data, null, 2);
     }
 
-    async function loadDetail() {
-      try {
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'DETAIL STOCK MATERIAL'!A1:Z1000?key=${API_KEY}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        const rows = data.values.slice(1); // hapus header
-
-        console.log("Data diambil:", rows.length, "baris");
-
-        const filteredRows = rows.filter(row => row[5] && row[5].trim() === kodeMaterial);
-
-        const tbody = document.getElementById("detail-body");
-        tbody.innerHTML = "";
-
-        if (filteredRows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
-          return;
-        }
-
-        filteredRows.forEach((row, i) => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${i + 1}</td>
-            <td>${row[1] || "-"}</td>
-            <td>${row[2] || "-"}</td>
-            <td>${row[3] || "-"}</td>
-            <td>${row[4] || "-"}</td>
-            <td>${row[8] || "-"}</td>
-            <td>${row[9] || "-"}</td>
-            <td>${row[10] || "-"}</td>
-            <td>${row[16] || "-"}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } catch (error) {
-        console.error("❌ Gagal memuat data:", error);
-        document.getElementById("detail-body").innerHTML =
-          `<tr><td colspan="9" style="color:red;text-align:center;">Gagal mengambil data dari Google Sheets.</td></tr>`;
-      }
-    }
-
-    loadDetail();
+    loadData();
   </script>
 </body>
 </html>
