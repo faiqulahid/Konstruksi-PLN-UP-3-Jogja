@@ -53,8 +53,14 @@
         const values = data.values || [];
 
         thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
+          <th>No</th>
+          <th>ULP</th>
+          <th>Bulan Kebutuhan</th>
+          <th>Prioritas</th>
+          <th>Tarif</th>
+          <th>Daya Lama</th>
+          <th>Daya Baru</th>
+          <th>Jumlah Pelanggan</th>
         `;
 
         let no = 1;
@@ -93,7 +99,7 @@
           <th>Vendor</th>
           <th>Awal</th>
           <th>Akhir</th>
-          <th>Jumlah</th>
+          <th>Jumlah SPB</th>
           <th>Jumlah Diterima</th>
           <th>Tanggal Terima</th>
           <th>Nilai SPB</th>
@@ -101,19 +107,20 @@
 
         let no = 1;
         values.forEach(row => {
-          const kodeMaterial = row[5]; // Kolom F = index ke-5
+          // Cek kolom F (index 5) berisi kode material
+          const kodeMaterial = row[5];
           if (kodeMaterial && kodeMaterial.trim() === kode.trim()) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${no++}</td>
-              <td>${row[1] || ''}</td>   <!-- No SPB -->
-              <td>${row[2] || ''}</td>   <!-- Vendor -->
-              <td>${row[3] || ''}</td>   <!-- Awal -->
-              <td>${row[4] || ''}</td>   <!-- Akhir -->
-              <td>${row[8] || ''}</td>   <!-- Jumlah -->
-              <td>${row[9] || ''}</td>   <!-- Jumlah Diterima -->
-              <td>${row[10] || ''}</td>  <!-- Tanggal Terima -->
-              <td>${row[16] || ''}</td>  <!-- Nilai SPB -->
+              <td>${row[1] || ''}</td>  <!-- No SPB -->
+              <td>${row[2] || ''}</td>  <!-- Vendor -->
+              <td>${row[3] || ''}</td>  <!-- Awal -->
+              <td>${row[4] || ''}</td>  <!-- Akhir -->
+              <td>${row[8] || ''}</td>  <!-- Jumlah SPB -->
+              <td>${row[9] || ''}</td>  <!-- Jumlah Diterima -->
+              <td>${row[10] || ''}</td> <!-- Tanggal Terima -->
+              <td>${row[16] || ''}</td> <!-- Nilai SPB -->
             `;
             tbody.appendChild(tr);
           }
