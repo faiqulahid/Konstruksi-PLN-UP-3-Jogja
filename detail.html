@@ -1,30 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Detail Data</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detail Stock Material</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Memuat Data...</h1>
+  <header>
+    <h1 id="judul-material">Detail Stock Material</h1>
+    <p id="kode-material"></p>
+  </header>
 
-  <div id="data-container"></div>
+  <main>
+    <div id="tabel-container">
+      <table id="detail-tabel">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nomor SPB</th>
+            <th>Vendor Pelaksana</th>
+            <th>Awal</th>
+            <th>Akhir</th>
+            <th>Jumlah SPB</th>
+            <th>Jumlah Diterima</th>
+            <th>Tgl Terima</th>
+            <th>Nilai SPB</th>
+          </tr>
+        </thead>
+        <tbody id="detail-body">
+          <tr><td colspan="9" style="text-align:center;">Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
 
-  <script type="module">
-    import { CONFIG } from './config.js';
+  <!-- 🔹 Urutan penting: config.js harus dipanggil sebelum script lain -->
+  <script src="./config.js"></script>
 
-    const sheetId = CONFIG.SHEET_ID;
-    const apiKey = CONFIG.API_KEY;
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetId}/values:batchGet?ranges=Sheet1!A1:Z100&key=${apiKey}`;
+  <script>
+    // Ambil konfigurasi dari config.js
+    const { API_KEY, SHEET_ID } = CONFIG;
 
-    async function loadData() {
-      const res = await fetch(url);
-      const data = await res.json();
-      console.log(data);
-      document.getElementById('data-container').innerText = JSON.stringify(data, null, 2);
+    // Ambil kode material dari URL
+    const params = new URLSearchParams(window.location.search);
+    const kodeMaterial = params.get('kode');
+
+    document.getElementById("kode-material").textContent = `Kode Material: ${kodeMaterial}`;
+
+    async function loadDetail() {
+      try {
+        const response = await fetch(
+          `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/DETAIL STOCK MATERIAL?key=${API_KEY}`
+        );
+        const data = await response.json();
+
+        const rows = data.values.slice(1); // Hapus header baris pertama
+
+        // 🔍 DEBUG LOG
+        console.log("Kode material dari URL:", kodeMaterial);
+        console.log("Contoh 5 baris pertama data dari sheet DETAIL STOCK MATERIAL:");
+        console.log(rows.slice(0, 5));
+
+        // Filter baris yang cocok di kolom F (index ke-5)
+        const filteredRows = rows.filter(row => row[5] && row[5].toString().trim() === kodeMaterial);
+
+        const tbody = document.getElementById("detail-body");
+        tbody.innerHTML = "";
+
+        if (filteredRows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
+          return;
+        }
+
+        // Render tabel data
+        filteredRows.forEach((row, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${row[1] || "-"}</td>
+            <td>${row[2] || "-"}</td>
+            <td>${row[3] || "-"}</td>
+            <td>${row[4] || "-"}</td>
+            <td>${row[8] || "-"}</td>
+            <td>${row[9] || "-"}</td>
+            <td>${row[10] || "-"}</td>
+            <td>${row[16] || "-"}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+      } catch (error) {
+        console.error("Gagal memuat data:", error);
+        document.getElementById("detail-body").innerHTML =
+          `<tr><td colspan="9" style="text-align:center;color:red;">❌ Gagal memuat data dari Google Sheets.</td></tr>`;
+      }
     }
 
-    loadData();
+    loadDetail();
   </script>
 </body>
 </html>
