@@ -6,17 +6,76 @@
   <title>Detail Stock Material</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-    th { background-color: #007bff; color: white; }
-    tr:nth-child(even) { background-color: #f2f2f2; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f9fafb;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    h1 {
+      font-size: 1.6em;
+      color: #333;
+    }
+
+    #btn-kembali {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.3s;
+    }
+
+    #btn-kembali:hover {
+      background-color: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.1);
+    }
+
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+
+    th {
+      background-color: #007bff;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+
+    #kode-material {
+      color: #555;
+    }
   </style>
 </head>
 <body>
   <header>
-    <h1 id="judul-material">📦 Detail Stock Material</h1>
-    <p id="kode-material"></p>
+    <div>
+      <h1 id="judul-material">📦 Detail Stock Material</h1>
+      <p id="kode-material"></p>
+    </div>
+    <button id="btn-kembali" onclick="goBack()">← Kembali</button>
   </header>
 
   <main>
@@ -52,6 +111,16 @@
     const params = new URLSearchParams(window.location.search);
     const kodeMaterial = params.get('kode');
     document.getElementById("kode-material").textContent = `Kode Material: ${kodeMaterial}`;
+
+    // Fungsi tombol kembali
+    function goBack() {
+      if (document.referrer) {
+        window.history.back();
+      } else {
+        // Jika user langsung buka halaman ini (tanpa riwayat)
+        window.location.href = "index.html";
+      }
+    }
 
     async function loadDetail() {
       try {
