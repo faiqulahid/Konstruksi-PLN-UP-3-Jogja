@@ -101,20 +101,19 @@
 
         let no = 1;
         values.forEach(row => {
-          // Pastikan kolom B (index 1) berisi kode material
-          const kodeMaterial = row[1];
+          const kodeMaterial = row[5]; // Kolom F = index ke-5
           if (kodeMaterial && kodeMaterial.trim() === kode.trim()) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${no++}</td>
-              <td>${row[1] || ''}</td>  <!-- No SPB -->
-              <td>${row[2] || ''}</td>  <!-- Vendor -->
-              <td>${row[3] || ''}</td>  <!-- Awal -->
-              <td>${row[4] || ''}</td>  <!-- Akhir -->
-              <td>${row[8] || ''}</td>  <!-- Jumlah -->
-              <td>${row[9] || ''}</td>  <!-- Jumlah Diterima -->
-              <td>${row[10] || ''}</td> <!-- Tanggal Terima -->
-              <td>${row[16] || ''}</td> <!-- Nilai SPB -->
+              <td>${row[1] || ''}</td>   <!-- No SPB -->
+              <td>${row[2] || ''}</td>   <!-- Vendor -->
+              <td>${row[3] || ''}</td>   <!-- Awal -->
+              <td>${row[4] || ''}</td>   <!-- Akhir -->
+              <td>${row[8] || ''}</td>   <!-- Jumlah -->
+              <td>${row[9] || ''}</td>   <!-- Jumlah Diterima -->
+              <td>${row[10] || ''}</td>  <!-- Tanggal Terima -->
+              <td>${row[16] || ''}</td>  <!-- Nilai SPB -->
             `;
             tbody.appendChild(tr);
           }
