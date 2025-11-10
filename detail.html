@@ -13,9 +13,12 @@
   <div style="text-align:center;">
     <h2 id="judulUtama"></h2>
     <h3 id="subJudul" style="color:#555; margin-top:-10px;"></h3>
+    <button onclick="window.location.href='index.html'" 
+      style="background:#007AC3;color:white;padding:10px 20px;border:none;
+      border-radius:8px;cursor:pointer;margin-top:10px;">⬅ Kembali ke Dashboard</button>
   </div>
 
-  <div style="max-width:95%; margin:auto;">
+  <div style="max-width:95%; margin:auto; margin-top:20px;">
     <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
       <thead style="background:#007AC3; color:white;">
         <tr id="tableHeader"></tr>
@@ -39,7 +42,7 @@
 
       tbody.innerHTML = "";
 
-      // ======== jika dari DAFTAR TUNGGU ========
+      // ================== DETAIL DARI DAFTAR TUNGGU ==================
       if (kategori) {
         judul.textContent = kategori;
         sub.textContent = "Daftar Pelanggan";
@@ -50,8 +53,8 @@
         const values = data.values || [];
 
         thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th><th>Tarif</th>
-          <th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
+          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
+          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
         `;
 
         let no = 1;
@@ -73,37 +76,44 @@
         });
       }
 
-      // ======== jika dari STOCK MATERIAL ========
+      // ================== DETAIL DARI STOCK MATERIAL ==================
       if (material && kode) {
         judul.textContent = material;
         sub.textContent = `Kode: ${kode}`;
-        const range = "DETAIL STOCK MATERIAL!B2:Q";
+        const range = "DETAIL STOCK MATERIAL!A2:Q";
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
         const res = await fetch(url);
         const data = await res.json();
         const values = data.values || [];
 
+        // Header tabel untuk STOCK MATERIAL
         thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th>
-          <th>Jumlah Pelanggan</th><th>Keterangan</th>
+          <th>No</th>
+          <th>No SPB</th>
+          <th>Vendor</th>
+          <th>Awal</th>
+          <th>Akhir</th>
+          <th>Jumlah</th>
+          <th>Jumlah Diterima</th>
+          <th>Tanggal Terima</th>
+          <th>Nilai SPB</th>
         `;
 
         let no = 1;
         values.forEach(row => {
-          const [b, c, d, f, h, i, j, p, q] = row;
-          if (b && b.trim() === kode.trim()) {
+          const kodeMaterial = row[5]; // kolom F = kode material
+          if (kodeMaterial && kodeMaterial.trim() === kode.trim()) {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${no++}</td>
-              <td>${c || ''}</td>
-              <td>${d || ''}</td>
-              <td>${f || ''}</td>
-              <td>${h || ''}</td>
-              <td>${i || ''}</td>
-              <td>${j || ''}</td>
-              <td>${p || ''}</td>
-              <td>${q || ''}</td>
+              <td>${row[1] || ''}</td>  <!-- No SPB (B) -->
+              <td>${row[2] || ''}</td>  <!-- Vendor (C) -->
+              <td>${row[3] || ''}</td>  <!-- Awal (D) -->
+              <td>${row[4] || ''}</td>  <!-- Akhir (E) -->
+              <td>${row[8] || ''}</td>  <!-- Jumlah (I) -->
+              <td>${row[9] || ''}</td>  <!-- Jumlah Diterima (J) -->
+              <td>${row[10] || ''}</td> <!-- Tanggal Terima (K) -->
+              <td>${row[16] || ''}</td> <!-- Nilai SPB (Q) -->
             `;
             tbody.appendChild(tr);
           }
