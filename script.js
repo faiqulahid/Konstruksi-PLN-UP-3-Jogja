@@ -1,13 +1,15 @@
-// Ambil konfigurasi API dari config.js
+// ================================ //
+// 🔹 LOAD DASHBOARD MAIN BUTTONS 🔹 //
+// ================================ //
 async function loadDashboard(type) {
   if (type === "daftarTunggu") loadDaftarTunggu();
   else if (type === "stockMaterial") loadStockMaterial();
   else if (type === "materialKurang") loadMaterialKurang();
 }
 
-// ------------------------ //
-// 1️⃣ DAFTAR TUNGGU
-// ------------------------ //
+// ================================ //
+// 1️⃣ DAFTAR TUNGGU (AMAN, TIDAK DIUBAH) //
+// ================================ //
 async function loadDaftarTunggu() {
   const range = "DAFTAR TUNGGU!A1:L3145";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
@@ -15,9 +17,8 @@ async function loadDaftarTunggu() {
   const data = await response.json();
   const values = data.values || [];
 
-  const header = values[0];
   const rows = values.slice(1);
-  const kategoriCol = 11; // kolom L
+  const kategoriCol = 11;
 
   const kategoriCount = {};
   rows.forEach(r => {
@@ -45,9 +46,9 @@ async function loadDaftarTunggu() {
   });
 }
 
-// ------------------------ //
-// 2️⃣ STOCK MATERIAL
-// ------------------------ //
+// ================================ //
+// 2️⃣ STOCK MATERIAL //
+// ================================ //
 async function loadStockMaterial() {
   const range = "STOCK MATERIAL!A2:D";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
@@ -80,9 +81,9 @@ async function loadStockMaterial() {
   });
 }
 
-// ------------------------ //
-// 3️⃣ MATERIAL KURANG
-// ------------------------ //
+// ================================ //
+// 3️⃣ MATERIAL KURANG //
+// ================================ //
 async function loadMaterialKurang() {
   const range = "MATERIAL KURANG!A2:C";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
@@ -114,9 +115,9 @@ async function loadMaterialKurang() {
   });
 }
 
-// ------------------------ //
-// 4️⃣ DETAIL PAGE LOGIC
-// ------------------------ //
+// ================================ //
+// 4️⃣ DETAIL PAGE LOGIC //
+// ================================ //
 window.addEventListener("DOMContentLoaded", async () => {
   const params = new URLSearchParams(window.location.search);
   const type = params.get("type");
