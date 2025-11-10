@@ -1,133 +1,24 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Detail Material PLN</title>
-  <link rel="stylesheet" href="style.css"/>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard Material PLN</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
-  <h1 class="header">⚡ DETAIL MATERIAL PLN ⚡</h1>
+  <h1 class="header">⚡ DASHBOARD MONITORING MATERIAL PLN ⚡</h1>
 
-  <div style="text-align:center; margin:10px 0;">
-    <h2 id="judulUtama">Detail Material</h2>
-    <h3 id="subJudul" style="color:#555; margin-top:-8px;"></h3>
-    <button onclick="window.location.href='index.html'" style="background:#007AC3;color:white;padding:8px 14px;border:none;border-radius:8px;cursor:pointer;margin-top:8px;">⬅ Kembali ke Dashboard</button>
+  <div id="menu" class="menu">
+    <button onclick="loadDashboard('daftarTunggu')" class="nav-btn">Daftar Tunggu</button>
+    <button onclick="loadDashboard('stockMaterial')" class="nav-btn">Stock Material</button>
+    <button onclick="loadDashboard('materialKurang')" class="nav-btn">Material Kurang</button>
   </div>
 
-  <div style="max-width:95%; margin:auto; margin-top:16px;">
-    <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
-      <thead style="background:#007AC3; color:white;">
-        <tr>
-          <th>No</th>
-          <th>Nomor SPB</th>
-          <th>Vendor Pelaksana</th>
-          <th>Awal</th>
-          <th>Akhir</th>
-          <th>Jumlah SPB</th>
-          <th>Jumlah Diterima</th>
-          <th>Tgl Terima</th>
-          <th>Nilai SPB</th>
-        </tr>
-      </thead>
-      <tbody id="detailBody">
-        <tr><td colspan="9">🔄 Memuat data...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <div id="chartContainer" class="card-container"></div>
 
   <script src="config.js"></script>
-  <script>
-    // detail.html script - final
-    async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const kode = params.get("kode");            // KODE yang dikirim dari dashboard (kolom B di STOCK MATERIAL)
-      const nama = params.get("nama") || "";
-
-      document.getElementById("judulUtama").textContent = nama || "Detail Material";
-      document.getElementById("subJudul").textContent = kode ? `Kode: ${kode}` : "";
-
-      const tbody = document.getElementById("detailBody");
-      tbody.innerHTML = `<tr><td colspan="9">🔄 Memuat data...</td></tr>`;
-
-      if (!kode) {
-        tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Parameter kode tidak ditemukan di URL.</td></tr>`;
-        return;
-      }
-
-      // Ambil semua data dari DETAIL STOCK MATERIAL (A2:Q sehingga kolom Q ada)
-      const range = "DETAIL STOCK MATERIAL!A2:Q";
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-
-      try {
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
-
-        console.log("DETAIL STOCK MATERIAL rows fetched:", values.length);
-
-        // Indeks kolom sesuai permintaan:
-        // B = index 1 (Nomor SPB)
-        // C = index 2 (Vendor Pelaksana)
-        // D = index 3 (Awal)
-        // E = index 4 (Akhir)
-        // F = index 5 (Kode Material) -> digunakan untuk matching
-        // I = index 8 (Jumlah SPB)
-        // J = index 9 (Jumlah Diterima)
-        // K = index 10 (Tgl Terima)
-        // Q = index 16 (Nilai SPB)
-
-        const matched = values.filter(row => {
-          const k = (row[5] || "").toString().trim();
-          return k === kode.toString().trim();
-        });
-
-        tbody.innerHTML = "";
-
-        if (!matched || matched.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${escapeHtml(kode)}</td></tr>`;
-          console.log("Sample rows (first 8):", values.slice(0,8));
-          return;
-        }
-
-        // Tampilkan setiap baris hasil
-        matched.forEach((row, idx) => {
-          const noSpb = row[1] || "";
-          const vendor = row[2] || "";
-          const awal = row[3] || "";
-          const akhir = row[4] || "";
-          const jumlahSpb = row[8] || "";
-          const jumlahDiterima = row[9] || "";
-          const tglTerima = row[10] || "";
-          const nilaiSpb = row[16] || "";
-
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${idx + 1}</td>
-            <td>${escapeHtml(noSpb)}</td>
-            <td>${escapeHtml(vendor)}</td>
-            <td>${escapeHtml(awal)}</td>
-            <td>${escapeHtml(akhir)}</td>
-            <td>${escapeHtml(jumlahSpb)}</td>
-            <td>${escapeHtml(jumlahDiterima)}</td>
-            <td>${escapeHtml(tglTerima)}</td>
-            <td>${escapeHtml(nilaiSpb)}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-
-      } catch (err) {
-        console.error(err);
-        tbody.innerHTML = `<tr><td colspan="9" style="color:red;">❌ Gagal mengambil data dari Google Sheets</td></tr>`;
-      }
-    }
-
-    function escapeHtml(s) {
-      return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-    }
-
-    // jalankan
-    loadDetail();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
