@@ -1,122 +1,134 @@
-// ================= CONFIGURASI =================
-const SHEET_BASE = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json`;
+// ========== CONFIG SPREADSHEET ========== //
+const SPREADSHEET_ID = "1Ch1QiJIZaX1Nr4zHdbuNYPlzeLPdHJabHTJ_ZFXs82w";
+const API_KEY = "YOUR_API_KEY"; // ganti dengan API key-mu
+const SHEET_DETAIL = "DETAIL STOCK MATERIAL";
 
-// ================= FUNGSI FETCH DATA =================
-async function fetchSheet(sheetName) {
-  const response = await fetch(`${SHEET_BASE}&sheet=${encodeURIComponent(sheetName)}`);
-  const text = await response.text();
-  const json = JSON.parse(text.substr(47).slice(0, -2));
-  return json.table.rows.map(r => r.c.map(c => (c ? c.v : "")));
-}
-
-// ================= FUNGSI CHART =================
-let chartInstance;
-
-async function showChart(sheetName, title) {
-  const ctx = document.getElementById("mainChart").getContext("2d");
-  const rows = await fetchSheet(sheetName);
-
-  if (chartInstance) chartInstance.destroy();
-
-  // Ambil label dan data
-  const labels = rows.slice(1).map(r => r[0]);
-  const values = rows.slice(1).map(r => parseFloat(r[1]) || 0);
-
-  chartInstance = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: title,
-        data: values,
-        borderWidth: 1,
-      }],
-    },
-    options: {
-      responsive: true,
-      onClick: async (e, elements) => {
-        if (elements.length > 0) {
-          const index = elements[0].index;
-          const materialName = labels[index];
-          if (sheetName === "STOCK MATERIAL") {
-            window.location.href = `detail.html?material=${encodeURIComponent(materialName)}`;
-          }
-        }
-      },
-    },
-  });
-}
-
-// ================= FUNGSI DETAIL MATERIAL =================
-async function showMaterialDetail(kodeMaterial) {
-  const detailContainer = document.getElementById("detailContainer");
-  detailContainer.innerHTML = `<p>🔄 Memuat detail untuk: <b>${kodeMaterial}</b>...</p>`;
-
-  const rows = await fetchSheet(CONFIG.DETAIL_SHEET_NAME);
-
-  const hasilFilter = rows.filter(row => row[5] && row[5].toString().includes(kodeMaterial));
-
-  if (hasilFilter.length === 0) {
-    detailContainer.innerHTML = `<p>⚠️ Tidak ada data ditemukan untuk kode <b>${kodeMaterial}</b>.</p>`;
-    return;
-  }
-
-  let tabelHTML = `
-    <h3>${kodeMaterial}</h3>
-    <table border="1" cellspacing="0" cellpadding="6">
-      <tr style="background:#f1f1f1;font-weight:bold;">
-        <th>No SPB (B)</th>
-        <th>Vendor (C)</th>
-        <th>Awal (D)</th>
-        <th>Akhir (E)</th>
-        <th>Jumlah (I)</th>
-        <th>Jumlah Diterima (J)</th>
-        <th>Tanggal Terima (K)</th>
-        <th>Nilai SPB (Q)</th>
-      </tr>
-  `;
-
-  hasilFilter.forEach(row => {
-    tabelHTML += `
-      <tr>
-        <td>${row[1] || "-"}</td>
-        <td>${row[2] || "-"}</td>
-        <td>${row[3] || "-"}</td>
-        <td>${row[4] || "-"}</td>
-        <td>${row[8] || "-"}</td>
-        <td>${row[9] || "-"}</td>
-        <td>${row[10] || "-"}</td>
-        <td>${row[16] || "-"}</td>
-      </tr>
-    `;
-  });
-
-  tabelHTML += `</table>`;
-  detailContainer.innerHTML = tabelHTML;
-}
-
-// ================= EVENT LISTENER =================
-document.addEventListener("DOMContentLoaded", () => {
+// ========== AMBIL PARAMETER DARI URL ========== //
+document.addEventListener("DOMContentLoaded", async () => {
   const urlParams = new URLSearchParams(window.location.search);
-  const material = urlParams.get("material");
+  const kodeMaterial = urlParams.get("kode");
+  const namaMaterial = urlParams.get("nama");
 
-  if (material) {
-    showMaterialDetail(material);
-    return;
+  if (kodeMaterial && namaMaterial) {
+    await showMaterialDetail(kodeMaterial, namaMaterial);
   }
-
-  document.getElementById("daftarTungguBtn").addEventListener("click", () => {
-    showChart("DAFTAR TUNGGU", "Daftar Tunggu");
-  });
-
-  document.getElementById("stockMaterialBtn").addEventListener("click", () => {
-    showChart("STOCK MATERIAL", "Stock Material");
-  });
-
-  document.getElementById("kekuranganMaterialBtn").addEventListener("click", () => {
-    showChart("KEKURANGAN MATERIAL", "Kekurangan Material");
-  });
-
-  // default tampilkan stok material
-  showChart("STOCK MATERIAL", "Stock Material");
 });
+
+// ========== FUNGSI UTAMA UNTUK MENAMPILKAN DETAIL ========== //
+async function showMaterialDetail(kodeMaterial, namaMaterial) {
+  const container = document.getElementById("detailContainer");
+  container.innerHTML = `<p>🔄 Memuat data...</p>`;
+
+  try {
+    // Ambil data dari Google Sheet
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_DETAIL}?key=${API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+    const rows = data.values || [];
+
+    console.log("DETAIL STOCK MATERIAL rows fetched:", rows.length);
+
+    // Header kolom (baris pertama)
+    const header = rows[0];
+    const body = rows.slice(1);
+
+    // Index kolom
+    const colKode = 1; // kolom B = Kode Material
+    const colNoSPB = 1;
+    const colVendor = 2;
+    const colAwal = 3;
+    const colAkhir = 4;
+    const colJumlah = 8;
+    const colJumlahTerima = 9;
+    const colTglTerima = 10;
+    const colNilaiSPB = 16;
+
+    // Filter baris berdasarkan kode material
+    const hasilFilter = body.filter(r => (r[colKode] || "").toString().trim() === kodeMaterial.trim());
+
+    console.log(`Ditemukan ${hasilFilter.length} baris untuk kode ${kodeMaterial}`);
+
+    // ========== BANGUN TAMPILAN HTML ========== //
+    let html = `
+      <div style="text-align:center; margin-bottom:20px;">
+        <h2 style="color:#0056b3;">⚡ DETAIL MATERIAL PLN ⚡</h2>
+        <p><b>${kodeMaterial}</b></p>
+        <p>Kode: ${namaMaterial}</p>
+        <button onclick="window.location.href='index.html'" style="
+          background-color:#007bff;
+          color:white;
+          border:none;
+          padding:10px 20px;
+          border-radius:8px;
+          cursor:pointer;
+        ">← Kembali ke Dashboard</button>
+      </div>
+    `;
+
+    if (hasilFilter.length === 0) {
+      html += `
+        <table border="1" style="width:100%; border-collapse:collapse;">
+          <thead style="background-color:#0056b3; color:white;">
+            <tr>
+              <th>No</th>
+              <th>No SPB (B)</th>
+              <th>Vendor (C)</th>
+              <th>Awal (D)</th>
+              <th>Akhir (E)</th>
+              <th>Jumlah (I)</th>
+              <th>Jumlah Diterima (J)</th>
+              <th>Tanggal Terima (K)</th>
+              <th>Nilai SPB (Q)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td colspan="9" style="color:red; text-align:center; padding:10px;">
+              ⚠️ Tidak ada data ditemukan untuk kode ${namaMaterial}
+            </td></tr>
+          </tbody>
+        </table>
+      `;
+    } else {
+      html += `
+        <table border="1" style="width:100%; border-collapse:collapse;">
+          <thead style="background-color:#0056b3; color:white;">
+            <tr>
+              <th>No</th>
+              <th>No SPB (B)</th>
+              <th>Vendor (C)</th>
+              <th>Awal (D)</th>
+              <th>Akhir (E)</th>
+              <th>Jumlah (I)</th>
+              <th>Jumlah Diterima (J)</th>
+              <th>Tanggal Terima (K)</th>
+              <th>Nilai SPB (Q)</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+
+      hasilFilter.forEach((row, idx) => {
+        html += `
+          <tr>
+            <td>${idx + 1}</td>
+            <td>${row[colNoSPB] || ""}</td>
+            <td>${row[colVendor] || ""}</td>
+            <td>${row[colAwal] || ""}</td>
+            <td>${row[colAkhir] || ""}</td>
+            <td>${row[colJumlah] || ""}</td>
+            <td>${row[colJumlahTerima] || ""}</td>
+            <td>${row[colTglTerima] || ""}</td>
+            <td>${row[colNilaiSPB] || ""}</td>
+          </tr>
+        `;
+      });
+
+      html += "</tbody></table>";
+    }
+
+    container.innerHTML = html;
+  } catch (err) {
+    console.error("Error:", err);
+    container.innerHTML = `<p style="color:red;">❌ Gagal memuat data.</p>`;
+  }
+}
