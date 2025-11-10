@@ -1,122 +1,68 @@
-// script.js - final
-// Menggunakan CONFIG dari config.js (pastikan config.js ada dan berisi API_KEY & SHEET_ID)
-
-async function loadDashboard(type) {
-  if (type === "daftarTunggu") loadDaftarTunggu();
-  else if (type === "stockMaterial") loadStockMaterial();
-  else if (type === "materialKurang") loadMaterialKurang();
+body {
+  font-family: Arial, sans-serif;
+  background: #f8f9fa;
+  margin: 0;
+  padding: 0;
 }
 
-// ===================== DAFTAR TUNGGU (tetap seperti sekarang) =====================
-async function loadDaftarTunggu() {
-  const range = "DAFTAR TUNGGU!A1:L3145";
-  const url = https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY};
-  const res = await fetch(url);
-  const data = await res.json();
-  const values = data.values || [];
-
-  const rows = values.slice(1);
-  const kategoriCol = 11;
-  const kategoriCount = {};
-  rows.forEach(r => {
-    const kategori = r[kategoriCol] || "Tidak Ada Kategori";
-    kategoriCount[kategori] = (kategoriCount[kategori] || 0) + 1;
-  });
-
-  const container = document.getElementById("chartContainer");
-  container.innerHTML = "";
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(2, 1fr)";
-  container.style.gap = "30px";
-
-  Object.entries(kategoriCount).forEach(([kategori, jumlah]) => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = <h3>${kategori}</h3><p style="font-size:2em;font-weight:bold;color:#007AC3">${jumlah}</p>;
-    card.onclick = () => window.location.href = detail.html?kategori=${encodeURIComponent(kategori)};
-    container.appendChild(card);
-  });
+.header {
+  text-align: center;
+  background-color: #007AC3;
+  color: white;
+  padding: 20px;
+  border-bottom: 5px solid #FFD200;
+  margin-bottom: 30px;
 }
 
-// ===================== STOCK MATERIAL (gunakan A-D, kirim kode dari kolom B) =====================
-async function loadStockMaterial() {
-  const range = "STOCK MATERIAL!A2:D";
-  const url = https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY};
-  const res = await fetch(url);
-  const data = await res.json();
-  const values = data.values || [];
-
-  const container = document.getElementById("chartContainer");
-  container.innerHTML = "";
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(3, 1fr)";
-  container.style.gap = "20px";
-
-  values.forEach(row => {
-    // Row layout: [A = nama, B = kode, C = stok, D = belum]
-    const nama = row[0] || "";
-    const kode = row[1] || "";
-    const stok = row[2] || 0;
-    const belum = row[3] || 0;
-
-    if (!nama || !kode) return;
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h3>${escapeHtml(nama)}</h3>
-      <p><b>Kode Material: ${escapeHtml(kode)}</b></p>
-      <p style="color:green;font-size:1.1em;font-weight:bold;">${stok}</p>
-      <p style="color:red;font-size:1.1em;font-weight:bold;">${belum}</p>
-    `;
-
-    // Kirim KODE (kolom B) dan nama (untuk tampilan) ke detail
-    card.onclick = () => {
-      window.location.href = detail.html?kode=${encodeURIComponent(kode)}&nama=${encodeURIComponent(nama)};
-    };
-
-    container.appendChild(card);
-  });
+.menu {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-bottom: 30px;
 }
 
-// ===================== MATERIAL KURANG =====================
-async function loadMaterialKurang() {
-  const range = "MATERIAL KURANG!A2:C";
-  const url = https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY};
-  const res = await fetch(url);
-  const data = await res.json();
-  const values = data.values || [];
-
-  const container = document.getElementById("chartContainer");
-  container.innerHTML = "";
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(3, 1fr)";
-  container.style.gap = "20px";
-
-  values.forEach(row => {
-    const nama = row[0] || "";
-    const kode = row[1] || "";
-    const jumlah = parseFloat(row[2] || 0);
-    if (!nama || jumlah <= 0) return;
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h3>${escapeHtml(nama)}</h3>
-      <p><b>${escapeHtml(kode)}</b></p>
-      <p style="color:red;font-size:1.6em;font-weight:bold;">${jumlah}</p>
-    `;
-    container.appendChild(card);
-  });
+.nav-btn {
+  background: #007AC3;
+  color: white;
+  padding: 12px 25px;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: 0.3s;
 }
 
-// helper kecil untuk keamanan teks
-function escapeHtml(s) {
-  return String(s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+.nav-btn:hover {
+  background: #005b91;
 }
 
-// Jika halaman dimuat tanpa aksi, tampilkan stockMaterial sebagai default
-document.addEventListener("DOMContentLoaded", () => {
-  // Jika ada tombol/menu di HTML, user bisa klik. Default:
-  loadStockMaterial();
-});
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+  padding: 0 30px;
+}
+
+.card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card h3 {
+  margin: 0 0 10px 0;
+  font-size: 18px;
+}
+
+.card p {
+  margin: 5px 0;
+  font-size: 16px;
+}
