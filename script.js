@@ -1,101 +1,87 @@
-let data = []; // pastikan data terdefinisi
-let detailData = [];
+async function loadDashboard(type) {
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "<p style='text-align:center;'>⏳ Loading data...</p>";
 
-document.addEventListener("DOMContentLoaded", async () => {
-  await loadDashboard();
-});
-
-async function loadDashboard() {
-  const base = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values`;
+  let range = "";
+  let title = "";
   
-  // Ambil data utama untuk chart (misalnya dari sheet "STOCK MATERIAL")
-  const stockRes = await fetch(`${base}/'STOCK MATERIAL'?key=${CONFIG.API_KEY}`);
-  const stockJson = await stockRes.json();
-  data = stockJson.values || [];
-
-  // Ambil detail material dari sheet DETAIL STOCK MATERIAL
-  const detailRes = await fetch(`${base}/'DETAIL STOCK MATERIAL'?key=${CONFIG.API_KEY}`);
-  const detailJson = await detailRes.json();
-  detailData = detailJson.values || [];
-
-  renderChart();
-}
-
-// ---- Render Chart ----
-function renderChart() {
-  if (!data || data.length < 2) {
-    console.error("Data utama kosong");
-    return;
+  if (type === "daftarTunggu") {
+    range = "DAFTAR TUNGGU!A1:L3145";
+    title = "DAFTAR TUNGGU";
+  } else if (type === "stockMaterial") {
+    range = "STOCK MATERIAL!A1:D72";
+    title = "STOCK MATERIAL";
+  } else if (type === "materialKurang") {
+    range = "MATERIAL KURANG!A1:C74";
+    title = "MATERIAL KURANG";
   }
 
-  const labels = data.slice(1).map(row => row[0]); // kolom A = nama material
-  const values = data.slice(1).map(row => Number(row[1] || 0)); // kolom B = stok atau jumlah
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const values = data.values || [];
 
-  const ctx = document.getElementById("stockChart");
-  new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "Jumlah Stock",
-        data: values,
-        backgroundColor: "#118ab2"
-      }]
-    },
-    options: {
-      responsive: true,
-      onClick: (evt, elements) => {
-        if (elements.length > 0) {
-          const index = elements[0].index;
-          const materialName = labels[index];
-          showDetail(materialName);
-        }
+  container.innerHTML = `<h2 class="section-title">${title}</h2>`;
+  const cardGrid = document.createElement("div");
+  cardGrid.className = "card-container";
+
+  if (type === "daftarTunggu") {
+    const kategoriCounts = {};
+    values.slice(1).forEach(row => {
+      const kategori = row[11];
+      if (!kategori) return;
+      kategoriCounts[kategori] = (kategoriCounts[kategori] || 0) + 1;
+    });
+
+    Object.keys(kategoriCounts).forEach(kat => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${kat}</h3>
+        <p class="number">${kategoriCounts[kat]}</p>
+      `;
+      card.onclick = () => window.location.href = `detail.html?kategori=${encodeURIComponent(kat)}`;
+      cardGrid.appendChild(card);
+    });
+  }
+
+  if (type === "stockMaterial") {
+    values.slice(1).forEach(row => {
+      const nama = row[0];
+      const kode = row[1];
+      const stok = row[2];
+      const belum = row[3];
+      if (!nama) return;
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${nama}</h3>
+        <p>${kode}</p>
+        <p><span class="green">${stok}</span> | <span class="red">${belum}</span></p>
+      `;
+      card.onclick = () => window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
+      cardGrid.appendChild(card);
+    });
+  }
+
+  if (type === "materialKurang") {
+    values.slice(1).forEach(row => {
+      const nama = row[0];
+      const kode = row[1];
+      const jumlah = parseFloat(row[2] || 0);
+      if (jumlah > 0) {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.innerHTML = `
+          <h3>${nama}</h3>
+          <p>${kode}</p>
+          <p class="red big">${jumlah}</p>
+        `;
+        cardGrid.appendChild(card);
       }
-    }
-  });
-}
-
-// ---- Tampilkan Detail Berdasarkan Material ----
-function showDetail(materialName) {
-  const header = document.querySelector("header");
-  const chart = document.getElementById("stockChart");
-  const detailPage = document.getElementById("detailPage");
-  const tbody = document.querySelector("#detailTable tbody");
-  const nameEl = document.getElementById("materialName");
-  const codeEl = document.getElementById("materialCode");
-
-  // Sembunyikan chart, tampilkan detail
-  chart.classList.add("hidden");
-  detailPage.classList.remove("hidden");
-
-  // Filter detail berdasarkan material
-  const rows = detailData.filter(r => r[0] === materialName);
-
-  nameEl.textContent = `Material: ${materialName}`;
-  codeEl.textContent = rows.length > 0 ? `Kode: ${rows[0][5] || "-"}` : "Kode: -";
-
-  // Hapus isi lama
-  tbody.innerHTML = "";
-
-  if (rows.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9">Tidak ada data detail</td></tr>`;
-    return;
+    });
   }
 
-  // Isi tabel
-  rows.forEach((r, i) => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${i + 1}</td>
-      <td>${r[1] || "-"}</td>
-      <td>${r[2] || "-"}</td>
-      <td>${r[3] || "-"}</td>
-      <td>${r[4] || "-"}</td>
-      <td>${r[8] || "-"}</td>
-      <td>${r[9] || "-"}</td>
-      <td>${r[10] || "-"}</td>
-      <td>${r[16] || "-"}</td>
-    `;
-    tbody.appendChild(tr);
-  });
+  container.appendChild(cardGrid);
 }
