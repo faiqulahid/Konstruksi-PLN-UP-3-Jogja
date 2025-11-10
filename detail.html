@@ -39,7 +39,7 @@
 
       tbody.innerHTML = "";
 
-      // ======== jika dari DAFTAR TUNGGU ========
+      // ==================== DARI DAFTAR TUNGGU ====================
       if (kategori) {
         judul.textContent = kategori;
         sub.textContent = "Daftar Pelanggan";
@@ -50,8 +50,8 @@
         const values = data.values || [];
 
         thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th><th>Tarif</th>
-          <th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
+          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
+          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
         `;
 
         let no = 1;
@@ -73,41 +73,56 @@
         });
       }
 
-      // ======== jika dari STOCK MATERIAL ========
+      // ==================== DARI STOCK MATERIAL ====================
       if (material && kode) {
         judul.textContent = material;
         sub.textContent = `Kode: ${kode}`;
-        const range = "DETAIL STOCK MATERIAL!B2:Q";
+
+        const range = "DETAIL STOCK MATERIAL!A2:Q";
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
         const res = await fetch(url);
         const data = await res.json();
         const values = data.values || [];
 
         thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th>
-          <th>Jumlah Pelanggan</th><th>Keterangan</th>
+          <th>No</th>
+          <th>No SPB (B)</th>
+          <th>Vendor (C)</th>
+          <th>Awal (D)</th>
+          <th>Akhir (E)</th>
+          <th>Jumlah (I)</th>
+          <th>Jumlah Diterima (J)</th>
+          <th>Tanggal Terima (K)</th>
+          <th>Nilai SPB (Q)</th>
         `;
 
         let no = 1;
-        values.forEach(row => {
-          const [b, c, d, f, h, i, j, p, q] = row;
-          if (b && b.trim() === kode.trim()) {
+        const hasil = values.filter(row => (row[5] || "").trim() === kode.trim()); // kolom F index = 5
+
+        if (hasil.length === 0) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td colspan="9" style="color:red; text-align:center; padding:10px;">
+              ⚠️ Tidak ada data ditemukan untuk kode ${kode}
+            </td>`;
+          tbody.appendChild(tr);
+        } else {
+          hasil.forEach(row => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${no++}</td>
-              <td>${c || ''}</td>
-              <td>${d || ''}</td>
-              <td>${f || ''}</td>
-              <td>${h || ''}</td>
-              <td>${i || ''}</td>
-              <td>${j || ''}</td>
-              <td>${p || ''}</td>
-              <td>${q || ''}</td>
+              <td>${row[1] || ''}</td>
+              <td>${row[2] || ''}</td>
+              <td>${row[3] || ''}</td>
+              <td>${row[4] || ''}</td>
+              <td>${row[8] || ''}</td>
+              <td>${row[9] || ''}</td>
+              <td>${row[10] || ''}</td>
+              <td>${row[16] || ''}</td>
             `;
             tbody.appendChild(tr);
-          }
-        });
+          });
+        }
       }
     }
 
