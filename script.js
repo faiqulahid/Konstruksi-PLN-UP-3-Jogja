@@ -13,10 +13,8 @@ async function loadDaftarTunggu() {
   const data = await response.json();
   const values = data.values || [];
 
-  const header = values[0];
   const rows = values.slice(1);
-
-  const kategoriCol = 11; // kolom L (index ke-11)
+  const kategoriCol = 11;
   const kategoriCount = {};
 
   rows.forEach(r => {
@@ -60,19 +58,19 @@ async function loadStockMaterial() {
   container.style.gap = "20px";
 
   values.forEach(row => {
-    const [kode, nama, stok, belum] = row;
-    if (!nama) return;
+    const [no, kode, nama, stok] = row;
+    if (!kode || !nama) return;
 
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
       <h3>${nama}</h3>
-      <p><b>${kode}</b></p>
-      <p style="color:green; font-size:1.3em; font-weight:bold;">${stok}</p>
-      <p style="color:red; font-size:1.3em; font-weight:bold;">${belum}</p>
+      <p><b>Kode: ${kode}</b></p>
+      <p style="color:green; font-size:1.3em; font-weight:bold;">Stok: ${stok || 0}</p>
     `;
     card.onclick = () => {
-      window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
+      // kirim KODE MATERIAL ke detail.html
+      window.location.href = `detail.html?kode=${encodeURIComponent(kode)}&nama=${encodeURIComponent(nama)}`;
     };
     container.appendChild(card);
   });
