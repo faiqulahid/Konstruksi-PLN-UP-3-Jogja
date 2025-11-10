@@ -1,109 +1,122 @@
-async function loadDashboard(type) {
-  if (type === "daftarTunggu") loadDaftarTunggu();
-  else if (type === "stockMaterial") loadStockMaterial();
-  else if (type === "materialKurang") loadMaterialKurang();
+// ================= CONFIGURASI =================
+const SHEET_BASE = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json`;
+
+// ================= FUNGSI FETCH DATA =================
+async function fetchSheet(sheetName) {
+  const response = await fetch(`${SHEET_BASE}&sheet=${encodeURIComponent(sheetName)}`);
+  const text = await response.text();
+  const json = JSON.parse(text.substr(47).slice(0, -2));
+  return json.table.rows.map(r => r.c.map(c => (c ? c.v : "")));
 }
 
-// ===================== DAFTAR TUNGGU =====================
-async function loadDaftarTunggu() {
-  const range = "DAFTAR TUNGGU!A1:L3145";
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+// ================= FUNGSI CHART =================
+let chartInstance;
 
-  const response = await fetch(url);
-  const data = await response.json();
-  const values = data.values || [];
+async function showChart(sheetName, title) {
+  const ctx = document.getElementById("mainChart").getContext("2d");
+  const rows = await fetchSheet(sheetName);
 
-  const header = values[0];
-  const rows = values.slice(1);
+  if (chartInstance) chartInstance.destroy();
 
-  const kategoriCol = 11; // kolom L (index ke-11)
-  const kategoriCount = {};
+  // Ambil label dan data
+  const labels = rows.slice(1).map(r => r[0]);
+  const values = rows.slice(1).map(r => parseFloat(r[1]) || 0);
 
-  rows.forEach(r => {
-    const kategori = r[kategoriCol] || "Tidak Ada Kategori";
-    kategoriCount[kategori] = (kategoriCount[kategori] || 0) + 1;
+  chartInstance = new Chart(ctx, {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{
+        label: title,
+        data: values,
+        borderWidth: 1,
+      }],
+    },
+    options: {
+      responsive: true,
+      onClick: async (e, elements) => {
+        if (elements.length > 0) {
+          const index = elements[0].index;
+          const materialName = labels[index];
+          if (sheetName === "STOCK MATERIAL") {
+            window.location.href = `detail.html?material=${encodeURIComponent(materialName)}`;
+          }
+        }
+      },
+    },
   });
+}
 
-  const container = document.getElementById("chartContainer");
-  container.innerHTML = "";
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(2, 1fr)";
-  container.style.gap = "30px";
+// ================= FUNGSI DETAIL MATERIAL =================
+async function showMaterialDetail(kodeMaterial) {
+  const detailContainer = document.getElementById("detailContainer");
+  detailContainer.innerHTML = `<p>🔄 Memuat detail untuk: <b>${kodeMaterial}</b>...</p>`;
 
-  Object.entries(kategoriCount).forEach(([kategori, jumlah]) => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h3>${kategori}</h3>
-      <p style="font-size:2em; font-weight:bold; color:#007AC3;">${jumlah}</p>
+  const rows = await fetchSheet(CONFIG.DETAIL_SHEET_NAME);
+
+  const hasilFilter = rows.filter(row => row[5] && row[5].toString().includes(kodeMaterial));
+
+  if (hasilFilter.length === 0) {
+    detailContainer.innerHTML = `<p>⚠️ Tidak ada data ditemukan untuk kode <b>${kodeMaterial}</b>.</p>`;
+    return;
+  }
+
+  let tabelHTML = `
+    <h3>${kodeMaterial}</h3>
+    <table border="1" cellspacing="0" cellpadding="6">
+      <tr style="background:#f1f1f1;font-weight:bold;">
+        <th>No SPB (B)</th>
+        <th>Vendor (C)</th>
+        <th>Awal (D)</th>
+        <th>Akhir (E)</th>
+        <th>Jumlah (I)</th>
+        <th>Jumlah Diterima (J)</th>
+        <th>Tanggal Terima (K)</th>
+        <th>Nilai SPB (Q)</th>
+      </tr>
+  `;
+
+  hasilFilter.forEach(row => {
+    tabelHTML += `
+      <tr>
+        <td>${row[1] || "-"}</td>
+        <td>${row[2] || "-"}</td>
+        <td>${row[3] || "-"}</td>
+        <td>${row[4] || "-"}</td>
+        <td>${row[8] || "-"}</td>
+        <td>${row[9] || "-"}</td>
+        <td>${row[10] || "-"}</td>
+        <td>${row[16] || "-"}</td>
+      </tr>
     `;
-    card.onclick = () => {
-      window.location.href = `detail.html?kategori=${encodeURIComponent(kategori)}`;
-    };
-    container.appendChild(card);
   });
+
+  tabelHTML += `</table>`;
+  detailContainer.innerHTML = tabelHTML;
 }
 
-// ===================== STOCK MATERIAL =====================
-async function loadStockMaterial() {
-  const range = "STOCK MATERIAL!A2:D";
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+// ================= EVENT LISTENER =================
+document.addEventListener("DOMContentLoaded", () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  const material = urlParams.get("material");
 
-  const response = await fetch(url);
-  const data = await response.json();
-  const values = data.values || [];
+  if (material) {
+    showMaterialDetail(material);
+    return;
+  }
 
-  const container = document.getElementById("chartContainer");
-  container.innerHTML = "";
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(3, 1fr)";
-  container.style.gap = "20px";
-
-  values.forEach(row => {
-    const [kode, nama, stok, belum] = row;
-    if (!nama) return;
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h3>${nama}</h3>
-      <p><b>${kode}</b></p>
-      <p style="color:green; font-size:1.3em; font-weight:bold;">${stok}</p>
-      <p style="color:red; font-size:1.3em; font-weight:bold;">${belum}</p>
-    `;
-    card.onclick = () => {
-      window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
-    };
-    container.appendChild(card);
+  document.getElementById("daftarTungguBtn").addEventListener("click", () => {
+    showChart("DAFTAR TUNGGU", "Daftar Tunggu");
   });
-}
 
-// ===================== MATERIAL KURANG =====================
-async function loadMaterialKurang() {
-  const range = "MATERIAL KURANG!A2:C";
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-
-  const response = await fetch(url);
-  const data = await response.json();
-  const values = data.values || [];
-
-  const container = document.getElementById("chartContainer");
-  container.innerHTML = "";
-  container.style.display = "grid";
-  container.style.gridTemplateColumns = "repeat(3, 1fr)";
-  container.style.gap = "20px";
-
-  values.forEach(row => {
-    const [nama, kode, jumlah] = row;
-    if (!nama || jumlah <= 0) return;
-
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h3>${nama}</h3>
-      <p><b>${kode}</b></p>
-      <p style="color:red; font-size:1.6em; font-weight:bold;">${jumlah}</p>
-    `;
-    container.appendChild(card);
+  document.getElementById("stockMaterialBtn").addEventListener("click", () => {
+    showChart("STOCK MATERIAL", "Stock Material");
   });
-}
+
+  document.getElementById("kekuranganMaterialBtn").addEventListener("click", () => {
+    showChart("KEKURANGAN MATERIAL", "Kekurangan Material");
+  });
+
+  // default tampilkan stok material
+  showChart("STOCK MATERIAL", "Stock Material");
+});
