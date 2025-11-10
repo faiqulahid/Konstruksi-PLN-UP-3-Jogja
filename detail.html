@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Detail Data</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css" />
 </head>
 
 <body>
@@ -25,101 +25,6 @@
   </div>
 
   <script src="config.js"></script>
-  <script>
-    async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const kategori = params.get("kategori");
-      const kode = params.get("kode");
-      const nama = params.get("nama");
-
-      const judul = document.getElementById("judulUtama");
-      const sub = document.getElementById("subJudul");
-      const tbody = document.querySelector("#detailTable tbody");
-      const thead = document.querySelector("#tableHeader");
-
-      tbody.innerHTML = "";
-
-      // ======== dari DAFTAR TUNGGU ========
-      if (kategori) {
-        judul.textContent = kategori;
-        sub.textContent = "Daftar Pelanggan";
-        const range = "DAFTAR TUNGGU!A2:L3145";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
-
-        thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
-        `;
-
-        let no = 1;
-        values.forEach(r => {
-          if (r[11] === kategori) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${no++}</td>
-              <td>${r[2] || ''}</td>
-              <td>${r[3] || ''}</td>
-              <td>${r[4] || ''}</td>
-              <td>${r[6] || ''}</td>
-              <td>${r[7] || ''}</td>
-              <td>${r[8] || ''}</td>
-              <td>${r[9] || ''}</td>
-            `;
-            tbody.appendChild(tr);
-          }
-        });
-      }
-
-      // ======== dari STOCK MATERIAL ========
-      if (kode) {
-        judul.textContent = nama || "Detail Material";
-        sub.textContent = `Kode Material: ${kode}`;
-
-        const range = "DETAIL STOCK MATERIAL!A2:Q";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
-
-        thead.innerHTML = `
-          <th>No</th><th>Nomor SPB</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th><th>Keterangan</th>
-        `;
-
-        let no = 1;
-        values.forEach(row => {
-          // kolom B = Nomor SPB, kolom F = kode material
-          const kodeMaterial = row[5]; // kolom F
-          if (kodeMaterial && kodeMaterial.trim() === kode.trim()) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${no++}</td>
-              <td>${row[1] || ''}</td>
-              <td>${row[2] || ''}</td>
-              <td>${row[3] || ''}</td>
-              <td>${row[4] || ''}</td>
-              <td>${row[6] || ''}</td>
-              <td>${row[7] || ''}</td>
-              <td>${row[8] || ''}</td>
-              <td>${row[15] || ''}</td>
-              <td>${row[16] || ''}</td>
-            `;
-            tbody.appendChild(tr);
-          }
-        });
-
-        if (no === 1) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `<td colspan="10">⚠️ Tidak ada data ditemukan untuk kode ${kode}</td>`;
-          tbody.appendChild(tr);
-        }
-      }
-    }
-
-    loadDetail();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
