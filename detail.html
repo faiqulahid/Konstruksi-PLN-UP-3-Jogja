@@ -3,106 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detail Data</title>
+  <title>Detail Material</title>
   <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-  <h1 class="header">⚡ DETAIL MATERIAL PLN ⚡</h1>
+  <header>
+    <h1>📦 Detail Stock Material</h1>
+    <a href="index.html" class="back-btn">⬅ Kembali ke Dashboard</a>
+  </header>
 
-  <div style="text-align:center;">
-    <h2 id="judulUtama"></h2>
-    <h3 id="subJudul" style="color:#555; margin-top:-10px;"></h3>
-    <button onclick="window.location.href='index.html'" 
-      style="background:#007AC3;color:white;padding:10px 20px;border:none;
-      border-radius:8px;cursor:pointer;margin-top:10px;">⬅ Kembali ke Dashboard</button>
-  </div>
-
-  <div style="max-width:95%; margin:auto; margin-top:20px;">
-    <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
-      <thead style="background:#007AC3; color:white;">
-        <tr id="tableHeader"></tr>
-      </thead>
-      <tbody id="tableBody">
-        <tr><td colspan="9">🔄 Memuat data...</td></tr>
-      </tbody>
-    </table>
-  </div>
+  <main>
+    <div id="detailContainer" class="p-4 bg-white rounded-lg shadow"></div>
+  </main>
 
   <script src="config.js"></script>
-  <script>
-    async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const kategori = params.get("kategori");
-      const material = params.get("material");
-      const kode = params.get("kode");
-
-      const judul = document.getElementById("judulUtama");
-      const sub = document.getElementById("subJudul");
-      const tbody = document.getElementById("tableBody");
-      const thead = document.getElementById("tableHeader");
-
-      tbody.innerHTML = "";
-
-      // === DETAIL DARI STOCK MATERIAL ===
-      if (material && kode) {
-        judul.textContent = material;
-        sub.textContent = `Kode: ${kode}`;
-        const range = "DETAIL STOCK MATERIAL!A2:Q";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-
-        try {
-          const res = await fetch(url);
-          const data = await res.json();
-          const values = data.values || [];
-
-          thead.innerHTML = `
-            <th>No</th>
-            <th>No SPB (B)</th>
-            <th>Vendor (C)</th>
-            <th>Awal (D)</th>
-            <th>Akhir (E)</th>
-            <th>Jumlah (I)</th>
-            <th>Jumlah Diterima (J)</th>
-            <th>Tanggal Terima (K)</th>
-            <th>Nilai SPB (Q)</th>
-          `;
-
-          let no = 1;
-          let ditemukan = false;
-
-          values.forEach((row, i) => {
-            const kodeMaterial = (row[5] || "").trim().toUpperCase(); // kolom F (indeks 5)
-            if (kodeMaterial === kode.trim().toUpperCase()) {
-              ditemukan = true;
-              const tr = document.createElement("tr");
-              tr.innerHTML = `
-                <td>${no++}</td>
-                <td>${row[1] || ''}</td>
-                <td>${row[2] || ''}</td>
-                <td>${row[3] || ''}</td>
-                <td>${row[4] || ''}</td>
-                <td>${row[8] || ''}</td>
-                <td>${row[9] || ''}</td>
-                <td>${row[10] || ''}</td>
-                <td>${row[16] || ''}</td>
-              `;
-              tbody.appendChild(tr);
-            }
-          });
-
-          if (!ditemukan) {
-            tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${kode}</td></tr>`;
-          }
-
-        } catch (err) {
-          console.error(err);
-          tbody.innerHTML = `<tr><td colspan="9" style="color:red;">❌ Gagal mengambil data dari Google Sheets</td></tr>`;
-        }
-      }
-    }
-
-    loadDetail();
-  </script>
+  <script src="script.js"></script>
 </body>
 </html>
