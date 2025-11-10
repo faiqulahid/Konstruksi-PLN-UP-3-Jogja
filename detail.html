@@ -3,119 +3,94 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Detail Data</title>
+  <title>Detail Stock Material</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+    th { background-color: #007bff; color: white; }
+    tr:nth-child(even) { background-color: #f2f2f2; }
+  </style>
 </head>
-
 <body>
-  <h1 class="header">⚡ DETAIL MATERIAL PLN ⚡</h1>
+  <header>
+    <h1 id="judul-material">📦 Detail Stock Material</h1>
+    <p id="kode-material"></p>
+  </header>
 
-  <div style="text-align:center;">
-    <h2 id="judulUtama"></h2>
-    <h3 id="subJudul" style="color:#555; margin-top:-10px;"></h3>
-  </div>
+  <main>
+    <div id="tabel-container">
+      <table id="detail-tabel">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nomor SPB</th>
+            <th>Vendor Pelaksana</th>
+            <th>Awal</th>
+            <th>Akhir</th>
+            <th>Jumlah SPB</th>
+            <th>Jumlah Diterima</th>
+            <th>Tgl Terima</th>
+            <th>Nilai SPB</th>
+          </tr>
+        </thead>
+        <tbody id="detail-body">
+          <tr><td colspan="9" style="text-align:center;">⏳ Memuat data...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
 
-  <div style="max-width:95%; margin:auto;">
-    <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
-      <thead style="background:#007AC3; color:white;">
-        <tr id="tableHeader"></tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
+  <!-- Script Config harus dipanggil lebih dulu -->
+  <script src="./config.js"></script>
 
-  <script src="config.js"></script>
   <script>
+    const { API_KEY, SHEET_ID } = CONFIG;
+
+    // Ambil kode material dari URL
+    const params = new URLSearchParams(window.location.search);
+    const kodeMaterial = params.get('kode');
+    document.getElementById("kode-material").textContent = `Kode Material: ${kodeMaterial}`;
+
     async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const kategori = params.get("kategori");
-      const kode = params.get("kode");
-      const nama = params.get("nama");
+      try {
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/'DETAIL STOCK MATERIAL'!A1:Z1000?key=${API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        const rows = data.values.slice(1); // hapus header
 
-      const judul = document.getElementById("judulUtama");
-      const sub = document.getElementById("subJudul");
-      const tbody = document.querySelector("#detailTable tbody");
-      const thead = document.querySelector("#tableHeader");
+        console.log("Data diambil:", rows.length, "baris");
 
-      tbody.innerHTML = "";
+        const filteredRows = rows.filter(row => row[5] && row[5].trim() === kodeMaterial);
 
-      // ======== dari DAFTAR TUNGGU ========
-      if (kategori) {
-        judul.textContent = kategori;
-        sub.textContent = "Daftar Pelanggan";
-        const range = "DAFTAR TUNGGU!A2:L3145";
-        const url = https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY};
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
+        const tbody = document.getElementById("detail-body");
+        tbody.innerHTML = "";
 
-        thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan Kebutuhan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah Pelanggan</th>
-        `;
-
-        let no = 1;
-        values.forEach(r => {
-          if (r[11] === kategori) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${no++}</td>
-              <td>${r[2] || ''}</td>
-              <td>${r[3] || ''}</td>
-              <td>${r[4] || ''}</td>
-              <td>${r[6] || ''}</td>
-              <td>${r[7] || ''}</td>
-              <td>${r[8] || ''}</td>
-              <td>${r[9] || ''}</td>
-            `;
-            tbody.appendChild(tr);
-          }
-        });
-      }
-
-      // ======== dari STOCK MATERIAL ========
-      if (kode) {
-        judul.textContent = nama || "Detail Material";
-        sub.textContent = Kode Material: ${kode};
-
-        const range = "DETAIL STOCK MATERIAL!A2:Q";
-        const url = https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY};
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
-
-        thead.innerHTML = `
-          <th>No</th><th>Nomor SPB</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th><th>Keterangan</th>
-        `;
-
-        let no = 1;
-        values.forEach(row => {
-          // kolom B = Nomor SPB, kolom F = kode material
-          const kodeMaterial = row[5]; // kolom F
-          if (kodeMaterial && kodeMaterial.trim() === kode.trim()) {
-            const tr = document.createElement("tr");
-            tr.innerHTML = `
-              <td>${no++}</td>
-              <td>${row[1] || ''}</td>
-              <td>${row[2] || ''}</td>
-              <td>${row[3] || ''}</td>
-              <td>${row[4] || ''}</td>
-              <td>${row[6] || ''}</td>
-              <td>${row[7] || ''}</td>
-              <td>${row[8] || ''}</td>
-              <td>${row[15] || ''}</td>
-              <td>${row[16] || ''}</td>
-            `;
-            tbody.appendChild(tr);
-          }
-        });
-
-        if (no === 1) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = <td colspan="10">⚠ Tidak ada data ditemukan untuk kode ${kode}</td>;
-          tbody.appendChild(tr);
+        if (filteredRows.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
+          return;
         }
+
+        filteredRows.forEach((row, i) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${row[1] || "-"}</td>
+            <td>${row[2] || "-"}</td>
+            <td>${row[3] || "-"}</td>
+            <td>${row[4] || "-"}</td>
+            <td>${row[8] || "-"}</td>
+            <td>${row[9] || "-"}</td>
+            <td>${row[10] || "-"}</td>
+            <td>${row[16] || "-"}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (error) {
+        console.error("❌ Gagal memuat data:", error);
+        document.getElementById("detail-body").innerHTML =
+          `<tr><td colspan="9" style="color:red;text-align:center;">Gagal mengambil data dari Google Sheets.</td></tr>`;
       }
     }
 
