@@ -3,24 +3,75 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dashboard Material PLN</title>
-  <link rel="stylesheet" href="style.css" />
-</head>
-
-<body>
-  <h1 class="header">
-    ⚡ DASHBOARD MONITORING MATERIAL PLN ⚡
-  </h1>
-
-  <div id="menu" class="menu">
-    <button onclick="loadDashboard('daftarTunggu')" class="nav-btn">Daftar Tunggu</button>
-    <button onclick="loadDashboard('stockMaterial')" class="nav-btn">Stock Material</button>
-    <button onclick="loadDashboard('materialKurang')" class="nav-btn">Material Kurang</button>
-  </div>
-
-  <div id="chartContainer" class="card-container"></div>
-
+  <title>Dashboard Material</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="config.js"></script>
-  <script src="script.js"></script>
+  <script src="main.js" defer></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      margin: 0;
+      padding: 20px;
+    }
+    header {
+      background: #006d77;
+      color: #fff;
+      padding: 15px;
+      text-align: center;
+      font-size: 1.4em;
+    }
+    canvas {
+      background: #fff;
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    .hidden {
+      display: none;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #006d77;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>📊 Dashboard Stock Material</header>
+  <canvas id="stockChart" width="400" height="200"></canvas>
+
+  <div id="detailPage" class="hidden">
+    <h2 id="materialName"></h2>
+    <h3 id="materialCode"></h3>
+    <table id="detailTable">
+      <thead>
+        <tr>
+          <th>No</th>
+          <th>No SPB (B)</th>
+          <th>Vendor (C)</th>
+          <th>Awal (D)</th>
+          <th>Akhir (E)</th>
+          <th>Jumlah (I)</th>
+          <th>Diterima (J)</th>
+          <th>Tgl Terima (K)</th>
+          <th>Nilai SPB (Q)</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
 </body>
 </html>
