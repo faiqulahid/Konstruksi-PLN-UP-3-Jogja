@@ -18,9 +18,9 @@ async function showChart(sheetName, title) {
 
   if (chartInstance) chartInstance.destroy();
 
-  // Ambil label dan data
-  const labels = rows.slice(1).map(r => r[0]);
-  const values = rows.slice(1).map(r => parseFloat(r[1]) || 0);
+  const labels = rows.slice(1).map(r => r[1]); // kolom B = nama material
+  const codes = rows.slice(1).map(r => r[0]); // kolom A = kode material
+  const stokValues = rows.slice(1).map(r => parseFloat(r[2]) || 0);
 
   chartInstance = new Chart(ctx, {
     type: "bar",
@@ -28,8 +28,8 @@ async function showChart(sheetName, title) {
       labels,
       datasets: [{
         label: title,
-        data: values,
-        borderWidth: 1,
+        data: stokValues,
+        backgroundColor: "#007bff"
       }],
     },
     options: {
@@ -37,10 +37,9 @@ async function showChart(sheetName, title) {
       onClick: async (e, elements) => {
         if (elements.length > 0) {
           const index = elements[0].index;
-          const materialName = labels[index];
-          if (sheetName === "STOCK MATERIAL") {
-            window.location.href = `detail.html?material=${encodeURIComponent(materialName)}`;
-          }
+          const kode = codes[index];
+          const nama = labels[index];
+          window.location.href = `detail.html?kode=${encodeURIComponent(kode)}&nama=${encodeURIComponent(nama)}`;
         }
       },
     },
@@ -48,23 +47,42 @@ async function showChart(sheetName, title) {
 }
 
 // ================= FUNGSI DETAIL MATERIAL =================
-async function showMaterialDetail(kodeMaterial) {
+async function showMaterialDetail(kodeMaterial, namaMaterial) {
   const detailContainer = document.getElementById("detailContainer");
   detailContainer.innerHTML = `<p>🔄 Memuat detail untuk: <b>${kodeMaterial}</b>...</p>`;
 
   const rows = await fetchSheet(CONFIG.DETAIL_SHEET_NAME);
-
-  const hasilFilter = rows.filter(row => row[5] && row[5].toString().includes(kodeMaterial));
+  const hasilFilter = rows.filter(row => row[5] && row[5].toString().trim() === kodeMaterial.trim());
 
   if (hasilFilter.length === 0) {
-    detailContainer.innerHTML = `<p>⚠️ Tidak ada data ditemukan untuk kode <b>${kodeMaterial}</b>.</p>`;
+    detailContainer.innerHTML = `
+      <h2>${kodeMaterial}</h2>
+      <h3>Kode: ${namaMaterial}</h3>
+      <table border="1" cellspacing="0" cellpadding="6">
+        <tr style="background:#007AC3; color:white;">
+          <th>No</th>
+          <th>No SPB (B)</th>
+          <th>Vendor (C)</th>
+          <th>Awal (D)</th>
+          <th>Akhir (E)</th>
+          <th>Jumlah (I)</th>
+          <th>Jumlah Diterima (J)</th>
+          <th>Tanggal Terima (K)</th>
+          <th>Nilai SPB (Q)</th>
+        </tr>
+        <tr><td colspan="9" style="color:red; text-align:center;">⚠️ Tidak ada data ditemukan untuk kode ${namaMaterial}</td></tr>
+      </table>
+    `;
     return;
   }
 
   let tabelHTML = `
-    <h3>${kodeMaterial}</h3>
+    <h2>${kodeMaterial}</h2>
+    <h3>Kode: ${namaMaterial}</h3>
+    <a href="index.html" class="back-btn">⬅ Kembali ke Dashboard</a>
     <table border="1" cellspacing="0" cellpadding="6">
-      <tr style="background:#f1f1f1;font-weight:bold;">
+      <tr style="background:#007AC3; color:white;">
+        <th>No</th>
         <th>No SPB (B)</th>
         <th>Vendor (C)</th>
         <th>Awal (D)</th>
@@ -76,9 +94,10 @@ async function showMaterialDetail(kodeMaterial) {
       </tr>
   `;
 
-  hasilFilter.forEach(row => {
+  hasilFilter.forEach((row, i) => {
     tabelHTML += `
       <tr>
+        <td>${i + 1}</td>
         <td>${row[1] || "-"}</td>
         <td>${row[2] || "-"}</td>
         <td>${row[3] || "-"}</td>
@@ -97,11 +116,12 @@ async function showMaterialDetail(kodeMaterial) {
 
 // ================= EVENT LISTENER =================
 document.addEventListener("DOMContentLoaded", () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const material = urlParams.get("material");
+  const params = new URLSearchParams(window.location.search);
+  const kode = params.get("kode");
+  const nama = params.get("nama");
 
-  if (material) {
-    showMaterialDetail(material);
+  if (kode && nama) {
+    showMaterialDetail(kode, nama);
     return;
   }
 
