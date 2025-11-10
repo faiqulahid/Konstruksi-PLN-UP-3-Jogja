@@ -1,5 +1,5 @@
 // main.js
-const { API_KEY, SHEET_ID } = CONFIG;
+const { "AIzaSyDlV3SCfV4DNIRApbut9341pUdxwrkjjzQ", "1Ch1QiJIZaX1Nr4zHdbuNYPlzeLPdHJabHTJ_ZFXs82w" }; } = CONFIG;
 
 // Contoh fungsi load dashboard
 async function loadDashboard() {
