@@ -6,58 +6,45 @@
   <title>Detail Material</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    .top-bar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 10px auto;
-      max-width: 95%;
-    }
-    .btn {
-      background-color: #007AC3;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      padding: 8px 16px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: 0.2s;
-    }
-    .btn:hover {
-      background-color: #005f91;
-    }
-    #filterBar select, #filterBar input {
-      padding: 8px;
+    .filter-input {
+      padding: 6px;
+      margin: 5px;
       border: 1px solid #ccc;
       border-radius: 5px;
-      margin-left: 5px;
+      width: 180px;
     }
+    .btn {
+      padding: 8px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .btn-home { background: #007AC3; color: white; }
+    .btn-back { background: #777; color: white; }
+    .btn-reset { background: #ff9800; color: white; }
   </style>
 </head>
 
 <body>
   <h1 class="header">⚡ DETAIL MATERIAL PLN ⚡</h1>
 
-  <!-- 🔹 Tombol navigasi atas -->
-  <div class="top-bar">
-    <div>
-      <button class="btn" onclick="goBack()">⬅️ Kembali</button>
-      <button class="btn" onclick="goHome()">🏠 Home</button>
-    </div>
-
-    <!-- 🔹 Search & Filter -->
-    <div id="filterBar">
-      <label for="filterSelect">Filter:</label>
-      <select id="filterSelect"></select>
-      <input type="text" id="searchInput" placeholder="Ketik untuk memfilter...">
-    </div>
+  <!-- Tombol navigasi -->
+  <div style="text-align:center; margin-bottom:10px;">
+    <button class="btn btn-back" onclick="goBack()">⬅️ Kembali</button>
+    <button class="btn btn-home" onclick="goHome()">🏠 Home</button>
   </div>
 
+  <!-- Judul Halaman -->
   <div style="text-align:center;">
     <h2 id="judulUtama"></h2>
     <h3 id="subJudul" style="color:#555; margin-top:-10px;"></h3>
   </div>
 
+  <!-- Filter Bar -->
+  <div id="filterBar" style="text-align:center; margin:20px 0;"></div>
+
+  <!-- Tabel Data -->
   <div style="max-width:95%; margin:auto;">
     <table id="detailTable" border="1" style="width:100%; border-collapse:collapse; text-align:center;">
       <thead style="background:#007AC3; color:white;">
@@ -69,56 +56,50 @@
 
   <script src="config.js"></script>
   <script>
-    // ================== Navigasi ==================
+    // Tombol Navigasi
     function goBack() {
       window.history.back();
     }
     function goHome() {
-      window.location.href = "index.html"; // ubah jika nama halaman utama kamu berbeda
+      window.location.href = "index.html";
     }
 
-    // ================== Load Detail ==================
+    // ===================== LOAD DETAIL =====================
     async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const kategori = params.get("kategori");
-      const material = params.get("material");
-      const kodeMaterial = params.get("kode");
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const kategori = params.get("kategori");
+        const material = params.get("material");
+        const kodeMaterial = params.get("kode");
 
-      const judul = document.getElementById("judulUtama");
-      const sub = document.getElementById("subJudul");
-      const tbody = document.querySelector("#detailTable tbody");
-      const thead = document.querySelector("#tableHeader");
-      const filterSelect = document.getElementById("filterSelect");
+        const judul = document.getElementById("judulUtama");
+        const sub = document.getElementById("subJudul");
+        const tbody = document.querySelector("#detailTable tbody");
+        const thead = document.querySelector("#tableHeader");
+        const filterBar = document.getElementById("filterBar");
 
-      tbody.innerHTML = "";
-      thead.innerHTML = "";
+        tbody.innerHTML = "";
+        filterBar.innerHTML = "";
 
-      // ---------- DETAIL DARI DAFTAR TUNGGU ----------
-      if (kategori) {
-        judul.textContent = kategori;
-        sub.textContent = "Daftar Pelanggan";
-        filterSelect.innerHTML = `
-          <option value="all">Semua Kolom</option>
-          <option value="ULP">ULP</option>
-          <option value="Bulan">Bulan</option>
-          <option value="Prioritas">Prioritas</option>
-          <option value="Tarif">Tarif</option>
-        `;
+        // ================== DETAIL DAFTAR TUNGGU ==================
+        if (kategori) {
+          judul.textContent = kategori;
+          sub.textContent = "Daftar Pelanggan";
+          const range = "DAFTAR TUNGGU!A2:L3145";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const values = data.values || [];
 
-        const range = "DAFTAR TUNGGU!A2:L3145";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
+          thead.innerHTML = `
+            <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
+            <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th>
+            <th>Jumlah</th>
+          `;
 
-        thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
-        `;
-
-        let no = 1;
-        values.forEach(r => {
-          if (r[11] === kategori) {
+          let no = 1;
+          const rows = values.filter(r => r[11] === kategori);
+          rows.forEach(r => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${no++}</td>
@@ -131,129 +112,133 @@
               <td>${r[9] || ''}</td>
             `;
             tbody.appendChild(tr);
-          }
-        });
-      }
+          });
 
-      // ---------- DETAIL STOCK MATERIAL ----------
-      else if (material && kodeMaterial) {
-        judul.textContent = material;
-        sub.textContent = `Kode Material: ${kodeMaterial}`;
-        filterSelect.innerHTML = `
-          <option value="all">Semua Kolom</option>
-          <option value="Vendor Pelaksana">Vendor Pelaksana</option>
-          <option value="Tanggal Terima">Tanggal Terima</option>
-        `;
-
-        const range = "DETAIL STOCK MATERIAL!B2:Q";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const rows = data.values || [];
-
-        thead.innerHTML = `
-          <th>No</th><th>Nomor SPB</th><th>Vendor Pelaksana</th>
-          <th>Awal</th><th>Akhir</th><th>Jumlah SPB</th>
-          <th>Jumlah Diterima</th><th>Tgl Terima</th><th>Nilai SPB</th>
-        `;
-
-        let no = 1;
-        const filteredRows = rows.filter(row => (row[4] || "").trim() === (kodeMaterial || "").trim());
-        filteredRows.forEach(r => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${no++}</td>
-            <td>${r[0] || ''}</td>
-            <td>${r[1] || ''}</td>
-            <td>${r[2] || ''}</td>
-            <td>${r[3] || ''}</td>
-            <td>${r[5] || ''}</td>
-            <td>${r[6] || ''}</td>
-            <td>${r[7] || ''}</td>
-            <td>${r[15] || ''}</td>
+          // 🔍 Filter bar khusus DAFTAR TUNGGU
+          filterBar.innerHTML = `
+            <input class="filter-input" id="filterULP" placeholder="Filter ULP">
+            <input class="filter-input" id="filterTarif" placeholder="Filter Tarif">
+            <input class="filter-input" id="filterPrioritas" placeholder="Filter Prioritas">
+            <button class="btn btn-reset" onclick="resetFilter()">Reset</button>
           `;
-          tbody.appendChild(tr);
-        });
+        }
 
-        if (filteredRows.length === 0)
-          tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
-      }
+        // ================== DETAIL STOCK MATERIAL ==================
+        if (material && kodeMaterial) {
+          judul.textContent = material;
+          sub.textContent = `Kode Material: ${kodeMaterial}`;
+          const range = "DETAIL STOCK MATERIAL!B2:Q";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const rows = data.values || [];
+          const filteredRows = rows.filter(r => (r[4] || "").trim() === (kodeMaterial || "").trim());
 
-      // ---------- DETAIL MATERIAL KURANG ----------
-      else if (params.get("kurang")) {
-        const namaMaterial = params.get("kurang");
-        judul.textContent = namaMaterial;
-        sub.textContent = "Detail Kekurangan Material";
-        filterSelect.innerHTML = `
-          <option value="all">Semua Kolom</option>
-          <option value="Rayon">Rayon</option>
-          <option value="Vendor">Vendor</option>
-        `;
-
-        const range = "DETAIL MATERIAL KURANG!B2:L";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const rows = data.values || [];
-
-        thead.innerHTML = `
-          <th>No</th><th>No SPK</th><th>Nama Pelanggan</th><th>Alamat</th>
-          <th>Rayon</th><th>Vendor</th><th>Tarif</th><th>Tanggal</th><th>Jumlah</th>
-        `;
-
-        let no = 1;
-        const filteredRows = rows.filter(row => (row[6] || "").trim() === (namaMaterial || "").trim());
-        filteredRows.forEach(r => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${no++}</td>
-            <td>${r[0] || ''}</td>
-            <td>${r[1] || ''}</td>
-            <td>${r[2] || ''}</td>
-            <td>${r[3] || ''}</td>
-            <td>${r[4] || ''}</td>
-            <td>${r[5] || ''}</td>
-            <td>${r[9] || ''}</td>
-            <td>${r[10] || ''}</td>
+          thead.innerHTML = `
+            <th>No</th><th>Nomor SPB</th><th>Vendor Pelaksana</th>
+            <th>Awal</th><th>Akhir</th><th>Jumlah SPB</th>
+            <th>Jumlah Diterima</th><th>Tgl Terima</th><th>Nilai SPB</th>
           `;
-          tbody.appendChild(tr);
-        });
-      }
 
-      initSearchFilter();
+          let no = 1;
+          filteredRows.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${no++}</td>
+              <td>${r[0] || ''}</td>
+              <td>${r[1] || ''}</td>
+              <td>${r[2] || ''}</td>
+              <td>${r[3] || ''}</td>
+              <td>${r[7] || ''}</td>
+              <td>${r[8] || ''}</td>
+              <td>${r[9] || ''}</td>
+              <td>${r[15] || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // 🔍 Filter bar khusus STOCK MATERIAL
+          filterBar.innerHTML = `
+            <input class="filter-input" id="filterVendor" placeholder="Filter Vendor">
+            <input class="filter-input" id="filterTanggal" placeholder="Filter Tanggal Terima">
+            <button class="btn btn-reset" onclick="resetFilter()">Reset</button>
+          `;
+        }
+
+        // ================== DETAIL MATERIAL KURANG ==================
+        if (!kategori && !material && !kodeMaterial) {
+          judul.textContent = "DETAIL MATERIAL KURANG";
+          sub.textContent = "";
+          const range = "DETAIL MATERIAL KURANG!B2:L";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const rows = data.values || [];
+
+          thead.innerHTML = `
+            <th>No</th><th>No. SPK</th><th>Nama Pelanggan</th><th>Alamat</th>
+            <th>Rayon</th><th>Vendor</th><th>Tarif</th><th>Tanggal</th><th>Jumlah</th>
+          `;
+
+          let no = 1;
+          rows.forEach(r => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${no++}</td>
+              <td>${r[0] || ''}</td>
+              <td>${r[1] || ''}</td>
+              <td>${r[2] || ''}</td>
+              <td>${r[3] || ''}</td>
+              <td>${r[4] || ''}</td>
+              <td>${r[5] || ''}</td>
+              <td>${r[9] || ''}</td>
+              <td>${r[10] || ''}</td>
+            `;
+            tbody.appendChild(tr);
+          });
+
+          // 🔍 Filter bar khusus MATERIAL KURANG
+          filterBar.innerHTML = `
+            <input class="filter-input" id="filterRayon" placeholder="Filter Rayon">
+            <input class="filter-input" id="filterVendor" placeholder="Filter Vendor">
+            <button class="btn btn-reset" onclick="resetFilter()">Reset</button>
+          `;
+        }
+
+        // Aktifkan fitur filter dinamis setelah data selesai dimuat
+        aktifkanFilter();
+      } catch (err) {
+        console.error("Terjadi error di loadDetail():", err);
+      }
     }
 
-    // ================== Fitur Search Filter ==================
-    function initSearchFilter() {
-      const input = document.getElementById("searchInput");
-      const select = document.getElementById("filterSelect");
-      const rows = document.querySelectorAll("#detailTable tbody tr");
+    // ===================== FITUR FILTER =====================
+    function aktifkanFilter() {
+      const inputs = document.querySelectorAll(".filter-input");
+      inputs.forEach(input => {
+        input.addEventListener("keyup", () => {
+          const tbody = document.querySelector("#detailTable tbody");
+          const rows = tbody.querySelectorAll("tr");
+          const filters = {};
+          inputs.forEach(inp => {
+            if (inp.value.trim() !== "") filters[inp.id] = inp.value.toLowerCase();
+          });
 
-      input.addEventListener("keyup", () => applyFilter());
-      select.addEventListener("change", () => applyFilter());
-
-      function applyFilter() {
-        const keyword = input.value.toLowerCase();
-        const filterBy = select.value;
-        const headers = Array.from(document.querySelectorAll("#detailTable thead th")).map(th => th.textContent.trim());
-
-        rows.forEach(row => {
-          const cells = Array.from(row.querySelectorAll("td"));
-          const text = cells.map(td => td.textContent.toLowerCase());
-          let match = false;
-
-          if (filterBy === "all") {
-            match = text.some(t => t.includes(keyword));
-          } else {
-            const colIndex = headers.findIndex(h => h.toLowerCase() === filterBy.toLowerCase());
-            if (colIndex >= 0) {
-              match = (text[colIndex] || "").includes(keyword);
+          rows.forEach(row => {
+            const text = row.textContent.toLowerCase();
+            let match = true;
+            for (let key in filters) {
+              if (!text.includes(filters[key])) match = false;
             }
-          }
-
-          row.style.display = match ? "" : "none";
+            row.style.display = match ? "" : "none";
+          });
         });
-      }
+      });
+    }
+
+    function resetFilter() {
+      document.querySelectorAll(".filter-input").forEach(i => i.value = "");
+      document.querySelectorAll("#detailTable tbody tr").forEach(r => r.style.display = "");
     }
 
     loadDetail();
