@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Material Kosong</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h1 class="header">📦 Daftar Material Kosong</h1>
+
+  <div style="text-align:center; margin-bottom:15px;">
+    <button onclick="goBack()" style="padding:8px 16px;">⬅️ Kembali</button>
+    <button onclick="goHome()" style="padding:8px 16px;">🏠 Home</button>
+  </div>
+
+  <div style="max-width:90%; margin:auto;">
+    <table border="1" style="width:100%; border-collapse:collapse; text-align:center;">
+      <thead style="background:#007AC3; color:white;">
+        <tr>
+          <th>No</th>
+          <th>Nama Material</th>
+          <th>Kode Material</th>
+        </tr>
+      </thead>
+      <tbody id="kosongBody"></tbody>
+    </table>
+  </div>
+
+  <script>
+    function goBack() { window.history.back(); }
+    function goHome() { window.location.href = "index.html"; }
+
+    const kosongData = JSON.parse(sessionStorage.getItem("kosongData")) || [];
+    const tbody = document.getElementById("kosongBody");
+
+    if (kosongData.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="3" style="color:red;">Tidak ada material kosong.</td></tr>`;
+    } else {
+      kosongData.forEach((item, i) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${item.nama}</td>
+          <td>${item.kode}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+  </script>
+</body>
+</html>
