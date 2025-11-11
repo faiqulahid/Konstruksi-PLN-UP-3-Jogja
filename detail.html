@@ -73,10 +73,12 @@
         });
       }
 
-      // ---------- DETAIL DARI STOCK MATERIAL ----------
+      // ---------- DETAIL DARI STOCK MATERIAL (PERBAIKAN INDEX) ----------
       if (material && kodeMaterial) {
         judul.textContent = material;
         sub.textContent = `Kode Material: ${kodeMaterial}`;
+
+        // Range mulai dari B sehingga indeks bergeser: B=0, C=1, D=2, E=3, F=4, ..., Q=15
         const range = "DETAIL STOCK MATERIAL!B2:Q";
         const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
         const res = await fetch(url);
@@ -94,22 +96,33 @@
         `;
 
         let no = 1;
-        const filteredRows = rows.filter(row => row[4] && row[4].toString().trim() === kodeMaterial);
+        // **PERBAIKAN**: kolom F ada di index 4 ketika range dimulai di B
+        const filteredRows = rows.filter(row => (row[4] || "").toString().trim() === (kodeMaterial || "").toString().trim());
 
         console.log("Jumlah baris cocok:", filteredRows.length);
 
         filteredRows.forEach(r => {
+          // Mapping kolom berdasarkan B2:Q (B=0 ... Q=15)
+          // Nomor SPB = col B -> r[0]
+          // Vendor = col C -> r[1]
+          // Awal = col D -> r[2]
+          // Akhir = col E -> r[3]
+          // Jumlah SPB = col I -> r[7]
+          // Jumlah Diterima = col J -> r[8]
+          // Tgl Terima = col K -> r[9]
+          // Nilai SPB = col Q -> r[15]
           const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${no++}</td>
-            <td>${r[1] || ''}</td>
-            <td>${r[2] || ''}</td>
-            <td>${r[3] || ''}</td>
-            <td>${r[4] || ''}</td>
-            <td>${r[6] || ''}</td>
-            <td>${r[7] || ''}</td>
-            <td>${r[8] || ''}</td>
-            <td>${r[16] || ''}</td>
+         <tr>
+  <td>${no++}</td>
+  <td>${r[0] || ''}</td>  <!-- kolom B -->
+  <td>${r[1] || ''}</td>  <!-- kolom C -->
+  <td>${r[2] || ''}</td>  <!-- kolom D -->
+  <td>${r[3] || ''}</td>  <!-- kolom E -->
+  <td>${r[5] || ''}</td>  <!-- kolom G -->
+  <td>${r[6] || ''}</td>  <!-- kolom H -->
+  <td>${r[7] || ''}</td>  <!-- kolom I -->
+  <td>${r[15] || ''}</td> <!-- kolom Q -->
+</tr>
           `;
           tbody.appendChild(tr);
         });
