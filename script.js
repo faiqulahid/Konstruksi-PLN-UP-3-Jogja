@@ -1,230 +1,202 @@
-// =============================================
-// SCRIPT.JS FINAL VERSION
-// Dashboard Monitoring Material PLN
-// =============================================
-
-// ---------------- CONFIGURASI ----------------
-// Pastikan file config.js sudah di-load sebelum script ini
-// dan berisi:
-// const CONFIG = { API_KEY: "xxx", SHEET_ID: "xxx" };
-
-// ---------------- DASHBOARD UTAMA ----------------
-function loadDashboard(type) {
-  const chartContainer = document.getElementById("chartContainer");
-  chartContainer.innerHTML = `<div class="loading">⏳ Memuat data...</div>`;
-
+async function loadDashboard(type) {
   if (type === "daftarTunggu") loadDaftarTunggu();
   else if (type === "stockMaterial") loadStockMaterial();
   else if (type === "materialKurang") loadMaterialKurang();
 }
 
-// ---------------- 1️⃣ DAFTAR TUNGGU ----------------
+// ===================== DAFTAR TUNGGU =====================
 async function loadDaftarTunggu() {
-  const range = "DAFTAR TUNGGU!A2:G";
+  const range = "DAFTAR TUNGGU!A1:L3145";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const values = data.values || [];
+  const response = await fetch(url);
+  const data = await response.json();
+  const values = data.values || [];
 
-    let html = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Unit</th>
-            <th>Nama Material</th>
-            <th>Kode Material</th>
-            <th>Jumlah</th>
-            <th>Status</th>
-            <th>Keterangan</th>
-          </tr>
-        </thead>
-        <tbody>
+  const header = values[0];
+  const rows = values.slice(1);
+
+  const kategoriCol = 11;
+  const kategoriCount = {};
+
+  rows.forEach(r => {
+    const kategori = r[kategoriCol] || "Tidak Ada Kategori";
+    kategoriCount[kategori] = (kategoriCount[kategori] || 0) + 1;
+  });
+
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "";
+
+  Object.entries(kategoriCount).forEach(([kategori, jumlah]) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${kategori}</h3>
+      <p style="font-size:2em; font-weight:bold; color:#007AC3;">${jumlah}</p>
     `;
-
-    values.forEach((r, i) => {
-      html += `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${r[0] || "-"}</td>
-          <td>${r[1] || "-"}</td>
-          <td>${r[2] || "-"}</td>
-          <td>${r[3] || "-"}</td>
-          <td>${r[4] || "-"}</td>
-          <td>${r[5] || "-"}</td>
-        </tr>
-      `;
-    });
-
-    html += "</tbody></table>";
-    document.getElementById("chartContainer").innerHTML = html;
-  } catch (err) {
-    console.error("Gagal memuat daftar tunggu:", err);
-    document.getElementById("chartContainer").innerHTML =
-      `<p class="error">Gagal memuat data Daftar Tunggu.</p>`;
-  }
+    card.onclick = () => {
+      window.location.href = `detail.html?kategori=${encodeURIComponent(kategori)}`;
+    };
+    container.appendChild(card);
+  });
 }
 
-// ---------------- 2️⃣ STOCK MATERIAL ----------------
+// ===================== STOCK MATERIAL =====================
 async function loadStockMaterial() {
-  const range = "STOCK MATERIAL!A2:H";
+  const range = "STOCK MATERIAL!A2:D";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const values = data.values || [];
+  const response = await fetch(url);
+  const data = await response.json();
+  const values = data.values || [];
 
-    let html = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Kode Material</th>
-            <th>Nama Material</th>
-            <th>Stok</th>
-            <th>Satuan</th>
-            <th>Gudang</th>
-            <th>Update Terakhir</th>
-            <th>Detail</th>
-          </tr>
-        </thead>
-        <tbody>
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "";
+
+  values.forEach(row => {
+    const [nama, kode, stok, belum] = row;
+    if (!nama || !kode) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${nama}</h3>
+      <p><b>Kode Material: ${kode}</b></p>
+      <p style="color:green; font-size:1.3em; font-weight:bold;">Stok: ${stok}</p>
+      <p style="color:red; font-size:1.3em; font-weight:bold;">Belum Datang: ${belum}</p>
     `;
-
-    values.forEach((r, i) => {
-      const kode = r[1] || "-";
-      html += `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${kode}</td>
-          <td>${r[2] || "-"}</td>
-          <td>${r[3] || "-"}</td>
-          <td>${r[4] || "-"}</td>
-          <td>${r[5] || "-"}</td>
-          <td>${r[6] || "-"}</td>
-          <td><button onclick="openDetail('${kode}')">Lihat</button></td>
-        </tr>
-      `;
-    });
-
-    html += "</tbody></table>";
-    document.getElementById("chartContainer").innerHTML = html;
-  } catch (err) {
-    console.error("Gagal memuat stock material:", err);
-    document.getElementById("chartContainer").innerHTML =
-      `<p class="error">Gagal memuat data Stock Material.</p>`;
-  }
+    card.onclick = () => {
+      console.log("Klik material:", nama, "Kode:", kode);
+      window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
+    };
+    container.appendChild(card);
+  });
 }
 
-// ---------------- 3️⃣ MATERIAL KURANG ----------------
+// ===================== MATERIAL KURANG =====================
 async function loadMaterialKurang() {
-  const range = "MATERIAL KURANG!A2:E";
+  const range = "MATERIAL KURANG!A2:C";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const values = data.values || [];
+  const response = await fetch(url);
+  const data = await response.json();
+  const values = data.values || [];
 
-    let html = `
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>No</th>
-            <th>Kode Material</th>
-            <th>Nama Material</th>
-            <th>Stok Sekarang</th>
-            <th>Kebutuhan</th>
-          </tr>
-        </thead>
-        <tbody>
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "";
+
+  values.forEach(row => {
+    const [nama, kode, jumlah] = row;
+    if (!nama || !kode || jumlah <= 0) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${nama}</h3>
+      <p><b>Kode: ${kode}</b></p>
+      <p style="color:red; font-size:1.6em; font-weight:bold;">${jumlah}</p>
     `;
-
-    values.forEach((r, i) => {
-      html += `
-        <tr>
-          <td>${i + 1}</td>
-          <td>${r[0] || "-"}</td>
-          <td>${r[1] || "-"}</td>
-          <td>${r[2] || "-"}</td>
-          <td>${r[3] || "-"}</td>
-        </tr>
-      `;
-    });
-
-    html += "</tbody></table>";
-    document.getElementById("chartContainer").innerHTML = html;
-  } catch (err) {
-    console.error("Gagal memuat material kurang:", err);
-    document.getElementById("chartContainer").innerHTML =
-      `<p class="error">Gagal memuat data Material Kurang.</p>`;
-  }
+    container.appendChild(card);
+  });
+}
+async function loadDashboard(type) {
+  if (type === "daftarTunggu") loadDaftarTunggu();
+  else if (type === "stockMaterial") loadStockMaterial();
+  else if (type === "materialKurang") loadMaterialKurang();
 }
 
-// ---------------- DETAIL LINK ----------------
-function openDetail(kode) {
-  window.location.href = `detail.html?type=stockMaterial&kode=${kode}`;
-}
-
-// ---------------- 4️⃣ DETAIL STOCK MATERIAL ----------------
-async function loadDetailStockMaterial(kode) {
-  const range = "DETAIL STOCK MATERIAL!A2:Q"; // ✅ Ambil dari kolom A agar kolom F bisa terbaca
+// ===================== DAFTAR TUNGGU =====================
+async function loadDaftarTunggu() {
+  const range = "DAFTAR TUNGGU!A1:L3145";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
 
-  try {
-    const res = await fetch(url);
-    const data = await res.json();
-    const values = data.values || [];
+  const response = await fetch(url);
+  const data = await response.json();
+  const values = data.values || [];
 
-    const tbody = document.querySelector("#detailTable tbody");
-    const thead = document.querySelector("#tableHeader");
+  const header = values[0];
+  const rows = values.slice(1);
 
-    document.getElementById("judulUtama").textContent = "Detail Stock Material";
-    document.getElementById("subJudul").textContent = `Kode: ${kode}`;
-    tbody.innerHTML = "";
+  const kategoriCol = 11;
+  const kategoriCount = {};
 
-    thead.innerHTML = `
-      <th>No</th>
-      <th>Nomor SPB</th>
-      <th>Vendor Pelaksana</th>
-      <th>Awal</th>
-      <th>Akhir</th>
-      <th>Jumlah SPB</th>
-      <th>Jumlah Diterima</th>
-      <th>Tgl Terima</th>
-      <th>Nilai SPB</th>
+  rows.forEach(r => {
+    const kategori = r[kategoriCol] || "Tidak Ada Kategori";
+    kategoriCount[kategori] = (kategoriCount[kategori] || 0) + 1;
+  });
+
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "";
+
+  Object.entries(kategoriCount).forEach(([kategori, jumlah]) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${kategori}</h3>
+      <p style="font-size:2em; font-weight:bold; color:#007AC3;">${jumlah}</p>
     `;
+    card.onclick = () => {
+      window.location.href = `detail.html?kategori=${encodeURIComponent(kategori)}`;
+    };
+    container.appendChild(card);
+  });
+}
 
-    let no = 1;
-    values.forEach(r => {
-      if (r.length > 5 && r[5]?.toString().trim() === kode.toString().trim()) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${no++}</td>
-          <td>${r[1] || "-"}</td>
-          <td>${r[2] || "-"}</td>
-          <td>${r[3] || "-"}</td>
-          <td>${r[4] || "-"}</td>
-          <td>${r[8] || "-"}</td>
-          <td>${r[9] || "-"}</td>
-          <td>${r[10] || "-"}</td>
-          <td>${r[16] || "-"}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-    });
+// ===================== STOCK MATERIAL =====================
+async function loadStockMaterial() {
+  const range = "STOCK MATERIAL!A2:D";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
 
-    if (no === 1) {
-      tbody.innerHTML = `
-        <tr><td colspan="9" style="text-align:center; color:red;">
-          Tidak ditemukan data untuk kode ${kode}
-        </td></tr>`;
-    }
+  const response = await fetch(url);
+  const data = await response.json();
+  const values = data.values || [];
 
-  } catch (err) {
-    console.error("Gagal memuat detail stock material:", err);
-  }
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "";
+
+  values.forEach(row => {
+    const [nama, kode, stok, belum] = row;
+    if (!nama || !kode) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${nama}</h3>
+      <p><b>Kode Material: ${kode}</b></p>
+      <p style="color:green; font-size:1.3em; font-weight:bold;">Stok: ${stok}</p>
+      <p style="color:red; font-size:1.3em; font-weight:bold;">Belum Datang: ${belum}</p>
+    `;
+    card.onclick = () => {
+      console.log("Klik material:", nama, "Kode:", kode);
+      window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
+    };
+    container.appendChild(card);
+  });
+}
+
+// ===================== MATERIAL KURANG =====================
+async function loadMaterialKurang() {
+  const range = "MATERIAL KURANG!A2:C";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+
+  const response = await fetch(url);
+  const data = await response.json();
+  const values = data.values || [];
+
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "";
+
+  values.forEach(row => {
+    const [nama, kode, jumlah] = row;
+    if (!nama || !kode || jumlah <= 0) return;
+
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${nama}</h3>
+      <p><b>Kode: ${kode}</b></p>
+      <p style="color:red; font-size:1.6em; font-weight:bold;">${jumlah}</p>
+    `;
+    container.appendChild(card);
+  });
 }
