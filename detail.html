@@ -27,109 +27,125 @@
   <script src="config.js"></script>
   <script>
     async function loadDetail() {
-      const params = new URLSearchParams(window.location.search);
-      const kategori = params.get("kategori");
-      const material = params.get("material");
-      const kodeMaterial = params.get("kode");
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const kategori = params.get("kategori");
+        const material = params.get("material");
+        const kodeMaterial = params.get("kode");
 
-      const judul = document.getElementById("judulUtama");
-      const sub = document.getElementById("subJudul");
-      const tbody = document.querySelector("#detailTable tbody");
-      const thead = document.querySelector("#tableHeader");
-      tbody.innerHTML = "";
+        const judul = document.getElementById("judulUtama");
+        const sub = document.getElementById("subJudul");
+        const tbody = document.querySelector("#detailTable tbody");
+        const thead = document.querySelector("#tableHeader");
+        tbody.innerHTML = "";
 
-      // ---------- DETAIL DARI DAFTAR TUNGGU ----------
-      if (kategori) {
-        judul.textContent = kategori;
-        sub.textContent = "Daftar Pelanggan";
-        const range = "DAFTAR TUNGGU!A2:L3145";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const values = data.values || [];
+        // ---------- DETAIL DARI DAFTAR TUNGGU ----------
+        if (kategori) {
+          judul.textContent = kategori;
+          sub.textContent = "Daftar Pelanggan";
+          const range = "DAFTAR TUNGGU!A2:L3145";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("Gagal ambil DAFTAR TUNGGU:", res.status, text);
+            thead.innerHTML = `<th colspan="8" style="color:red;">Gagal mengambil data (status ${res.status})</th>`;
+            return;
+          }
+          const data = await res.json();
+          const values = data.values || [];
 
-        thead.innerHTML = `
-          <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-          <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th>
-          <th>Jumlah</th>
-        `;
+          thead.innerHTML = `
+            <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
+            <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th>
+            <th>Jumlah</th>
+          `;
 
-        let no = 1;
-        values.forEach(r => {
-          if (r[11] === kategori) {
+          let no = 1;
+          values.forEach(r => {
+            if (r[11] === kategori) {
+              const tr = document.createElement("tr");
+              tr.innerHTML = `
+                <td>${no++}</td>
+                <td>${r[2] || ''}</td>
+                <td>${r[3] || ''}</td>
+                <td>${r[4] || ''}</td>
+                <td>${r[6] || ''}</td>
+                <td>${r[7] || ''}</td>
+                <td>${r[8] || ''}</td>
+                <td>${r[9] || ''}</td>
+              `;
+              tbody.appendChild(tr);
+            }
+          });
+        }
+
+        // ---------- DETAIL DARI STOCK MATERIAL (PERBAIKAN INDEX) ----------
+        if (material && kodeMaterial) {
+          judul.textContent = material;
+          sub.textContent = `Kode Material: ${kodeMaterial}`;
+
+          // Range mulai dari B sehingga indeks bergeser: B=0, C=1, D=2, E=3, F=4, ..., Q=15
+          const range = "DETAIL STOCK MATERIAL!B2:Q";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+          const res = await fetch(url);
+          if (!res.ok) {
+            const text = await res.text();
+            console.error("Gagal ambil DETAIL STOCK MATERIAL:", res.status, text);
+            thead.innerHTML = `<th colspan="9" style="color:red;">Gagal mengambil data (status ${res.status})</th>`;
+            return;
+          }
+          const data = await res.json();
+          const rows = data.values || [];
+
+          console.log("Kode material dari URL:", kodeMaterial);
+          console.log("Contoh 5 baris pertama data dari DETAIL STOCK MATERIAL:", rows.slice(0, 5));
+
+          thead.innerHTML = `
+            <th>No</th><th>Nomor SPB</th><th>Vendor Pelaksana</th>
+            <th>Awal</th><th>Akhir</th><th>Jumlah SPB</th>
+            <th>Jumlah Diterima</th><th>Tgl Terima</th><th>Nilai SPB</th>
+          `;
+
+          let no = 1;
+          // **PERBAIKAN**: kolom F ada di index 4 ketika range dimulai di B
+          const filteredRows = rows.filter(row => (row[4] || "").toString().trim() === (kodeMaterial || "").toString().trim());
+
+          console.log("Jumlah baris cocok:", filteredRows.length);
+
+          filteredRows.forEach(r => {
+            // Mapping kolom berdasarkan B2:Q (B=0 ... Q=15)
+            // Nomor SPB = col B -> r[0]
+            // Vendor = col C -> r[1]
+            // Awal = col D -> r[2]
+            // Akhir = col E -> r[3]
+            // Jumlah SPB = col G -> r[5]
+            // Jumlah Diterima = col H -> r[6]
+            // Tgl Terima = col I -> r[7]
+            // Nilai SPB = col Q -> r[15]
             const tr = document.createElement("tr");
             tr.innerHTML = `
               <td>${no++}</td>
-              <td>${r[2] || ''}</td>
-              <td>${r[3] || ''}</td>
-              <td>${r[4] || ''}</td>
-              <td>${r[6] || ''}</td>
-              <td>${r[7] || ''}</td>
-              <td>${r[8] || ''}</td>
-              <td>${r[9] || ''}</td>
+              <td>${r[0] || ''}</td>  <!-- kolom B -->
+              <td>${r[1] || ''}</td>  <!-- kolom C -->
+              <td>${r[2] || ''}</td>  <!-- kolom D -->
+              <td>${r[3] || ''}</td>  <!-- kolom E -->
+              <td>${r[5] || ''}</td>  <!-- kolom G -->
+              <td>${r[6] || ''}</td>  <!-- kolom H -->
+              <td>${r[7] || ''}</td>  <!-- kolom I -->
+              <td>${r[15] || ''}</td> <!-- kolom Q -->
             `;
             tbody.appendChild(tr);
+          });
+
+          if (filteredRows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
           }
-        });
-      }
-
-      // ---------- DETAIL DARI STOCK MATERIAL (PERBAIKAN INDEX) ----------
-      if (material && kodeMaterial) {
-        judul.textContent = material;
-        sub.textContent = `Kode Material: ${kodeMaterial}`;
-
-        // Range mulai dari B sehingga indeks bergeser: B=0, C=1, D=2, E=3, F=4, ..., Q=15
-        const range = "DETAIL STOCK MATERIAL!B2:Q";
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        const rows = data.values || [];
-
-        console.log("Kode material dari URL:", kodeMaterial);
-        console.log("Contoh 5 baris pertama data dari DETAIL STOCK MATERIAL:");
-        console.log(rows.slice(0, 5));
-
-        thead.innerHTML = `
-          <th>No</th><th>Nomor SPB</th><th>Vendor Pelaksana</th>
-          <th>Awal</th><th>Akhir</th><th>Jumlah SPB</th>
-          <th>Jumlah Diterima</th><th>Tgl Terima</th><th>Nilai SPB</th>
-        `;
-
-        let no = 1;
-        // **PERBAIKAN**: kolom F ada di index 4 ketika range dimulai di B
-        const filteredRows = rows.filter(row => (row[4] || "").toString().trim() === (kodeMaterial || "").toString().trim());
-
-        console.log("Jumlah baris cocok:", filteredRows.length);
-
-        filteredRows.forEach(r => {
-          // Mapping kolom berdasarkan B2:Q (B=0 ... Q=15)
-          // Nomor SPB = col B -> r[0]
-          // Vendor = col C -> r[1]
-          // Awal = col D -> r[2]
-          // Akhir = col E -> r[3]
-          // Jumlah SPB = col I -> r[7]
-          // Jumlah Diterima = col J -> r[8]
-          // Tgl Terima = col K -> r[9]
-          // Nilai SPB = col Q -> r[15]
-          const tr = document.createElement("tr");
-         <tr>
-  <td>${no++}</td>
-  <td>${r[0] || ''}</td>  <!-- kolom B -->
-  <td>${r[1] || ''}</td>  <!-- kolom C -->
-  <td>${r[2] || ''}</td>  <!-- kolom D -->
-  <td>${r[3] || ''}</td>  <!-- kolom E -->
-  <td>${r[5] || ''}</td>  <!-- kolom G -->
-  <td>${r[6] || ''}</td>  <!-- kolom H -->
-  <td>${r[7] || ''}</td>  <!-- kolom I -->
-  <td>${r[15] || ''}</td> <!-- kolom Q -->
-</tr>
-          `;
-          tbody.appendChild(tr);
-        });
-
-        if (filteredRows.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
         }
+      } catch (err) {
+        console.error("Terjadi error di loadDetail():", err);
+        const tbody = document.querySelector("#detailTable tbody");
+        tbody.innerHTML = `<tr><td colspan="9" style="color:red;">Terjadi error saat memuat data. Cek console.</td></tr>`;
       }
     }
 
