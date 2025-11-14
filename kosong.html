@@ -1,49 +1,46 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Material Kosong</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    body{font-family:Arial,helvetica,sans-serif}
+    .header {text-align:center; margin:14px 0;}
+    table{width:95%; margin:auto;border-collapse:collapse}
+    th,td{border:1px solid #ddd;padding:8px;text-align:center}
+    thead{background:#007AC3;color:#fff}
+    .btn{padding:8px 12px;border:none;border-radius:6px;background:#007AC3;color:#fff;cursor:pointer;margin:8px}
+  </style>
 </head>
 <body>
   <h1 class="header">📦 Daftar Material Kosong</h1>
 
-  <div style="text-align:center; margin-bottom:15px;">
-    <button onclick="goBack()" style="padding:8px 16px;">⬅️ Kembali</button>
-    <button onclick="goHome()" style="padding:8px 16px;">🏠 Home</button>
+  <div style="text-align:center; margin-bottom:12px;">
+    <button class="btn" onclick="history.back()">⬅️ Kembali</button>
+    <button class="btn" onclick="location.href='index.html'">🏠 Home</button>
   </div>
 
-  <div style="max-width:90%; margin:auto;">
-    <table border="1" style="width:100%; border-collapse:collapse; text-align:center;">
-      <thead style="background:#007AC3; color:white;">
-        <tr>
-          <th>No</th>
-          <th>Nama Material</th>
-          <th>Kode Material</th>
-        </tr>
-      </thead>
+  <div style="max-width:95%; margin:auto;">
+    <table>
+      <thead><tr><th>No</th><th>Nama Material</th><th>Kode</th></tr></thead>
       <tbody id="kosongBody"></tbody>
     </table>
   </div>
 
   <script>
-    function goBack() { window.history.back(); }
-    function goHome() { window.location.href = "index.html"; }
+    // ambil data dari sessionStorage (diset oleh script.js tombol Kosong)
+    const list = JSON.parse(sessionStorage.getItem('kosongData') || '[]');
+    const tbody = document.getElementById('kosongBody');
 
-    const kosongData = JSON.parse(sessionStorage.getItem("kosongData")) || [];
-    const tbody = document.getElementById("kosongBody");
-
-    if (kosongData.length === 0) {
+    if (!list || list.length === 0) {
       tbody.innerHTML = `<tr><td colspan="3" style="color:red;">Tidak ada material kosong.</td></tr>`;
     } else {
-      kosongData.forEach((item, i) => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${i + 1}</td>
-          <td>${item.nama}</td>
-          <td>${item.kode}</td>
-        `;
+      tbody.innerHTML = '';
+      list.forEach((it, i) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${i+1}</td><td>${it.nama}</td><td>${it.kode}</td>`;
         tbody.appendChild(tr);
       });
     }
