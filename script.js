@@ -1,18 +1,21 @@
+// script.js (FINAL)
+// Pastikan config.js ter-load sebelum file ini (CONFIG.SHEET_ID, CONFIG.API_KEY)
+
 async function loadDashboard(type) {
-  if (type === "daftarTunggu") loadDaftarTunggu();
-  else if (type === "stockMaterial") loadStockMaterial();
-  else if (type === "materialKurang") loadMaterialKurang();
+  if (type === "daftarTunggu") await loadDaftarTunggu();
+  else if (type === "stockMaterial") await loadStockMaterial();
+  else if (type === "materialKurang") await loadMaterialKurang();
 }
 
 // ===================== DAFTAR TUNGGU =====================
 async function loadDaftarTunggu() {
   const range = "DAFTAR TUNGGU!A1:L3145";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-  const response = await fetch(url);
-  const data = await response.json();
-
+  const res = await fetch(url);
+  const data = await res.json();
   const values = data.values || [];
   const rows = values.slice(1);
+
   const kategoriCol = 11;
   const kategoriCount = {};
 
@@ -29,7 +32,7 @@ async function loadDaftarTunggu() {
     card.className = "card";
     card.innerHTML = `
       <h3>${kategori}</h3>
-      <p style="font-size:2em; font-weight:bold; color:#007AC3;">${jumlah}</p>
+      <p style="font-size:2em; font-weight:bold; color:#007AC3; margin:6px 0;">${jumlah}</p>
     `;
     card.onclick = () => {
       window.location.href = `detail.html?kategori=${encodeURIComponent(kategori)}`;
@@ -42,8 +45,8 @@ async function loadDaftarTunggu() {
 async function loadStockMaterial() {
   const range = "STOCK MATERIAL!A2:D";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-  const response = await fetch(url);
-  const data = await response.json();
+  const res = await fetch(url);
+  const data = await res.json();
   const values = data.values || [];
 
   const container = document.getElementById("chartContainer");
@@ -54,29 +57,35 @@ async function loadStockMaterial() {
     const [nama, kode, stok, belum] = row;
     if (!nama || !kode) return;
 
-    const stokVal = parseInt(stok) || 0;
-    const belumVal = parseInt(belum) || 0;
+    const stokVal = Number(stok);
+    const belumVal = Number(belum);
 
-    if (stokVal > 0 || belumVal > 0) {
+    // validasi: hanya tampilkan jika stok atau belum (arriving) ada > 0
+    const hasStok = !isNaN(stokVal) && stokVal > 0;
+    const hasBelum = !isNaN(belumVal) && belumVal > 0;
+
+    if (hasStok || hasBelum) {
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
         <h3>${nama}</h3>
         <p><b>Kode Material: ${kode}</b></p>
-        <p style="color:green; font-size:1.3em; font-weight:bold;">Stok: ${stokVal}</p>
-        <p style="color:red; font-size:1.3em; font-weight:bold;">Belum Datang: ${belumVal}</p>
+        <p style="color:green; font-size:1.1em; font-weight:bold; margin:6px 0;">Stok: ${hasStok ? stokVal : 0}</p>
+        <p style="color:red; font-size:1.1em; font-weight:bold; margin:6px 0;">Belum Datang: ${hasBelum ? belumVal : 0}</p>
       `;
       card.onclick = () => {
         window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
       };
       container.appendChild(card);
     } else {
+      // stok/jumlah tidak valid atau = 0 -> dianggap kosong
       kosongList.push({ nama, kode });
     }
   });
 
+  // Tombol lihat material kosong + indikator jumlah
   const btnKosong = document.createElement("button");
-  btnKosong.textContent = "🔍 Lihat Material Kosong";
+  btnKosong.textContent = `🔍 Lihat Material Kosong (${kosongList.length})`;
   btnKosong.style = "margin-top:20px; padding:10px 20px; display:block; margin:auto;";
   btnKosong.onclick = () => {
     sessionStorage.setItem("kosongData", JSON.stringify(kosongList));
@@ -89,8 +98,8 @@ async function loadStockMaterial() {
 async function loadMaterialKurang() {
   const range = "MATERIAL KURANG!A2:C";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-  const response = await fetch(url);
-  const data = await response.json();
+  const res = await fetch(url);
+  const data = await res.json();
   const values = data.values || [];
 
   const container = document.getElementById("chartContainer");
@@ -101,16 +110,21 @@ async function loadMaterialKurang() {
     const [nama, kode, jumlah] = row;
     if (!nama || !kode) return;
 
-    const jumlahVal = parseInt(jumlah) || 0;
+    const jumlahVal = Number(jumlah);
 
-    if (jumlahVal > 0) {
+    // tampilkan hanya jika jumlah > 0 (butuh material)
+    if (!isNaN(jumlahVal) && jumlahVal > 0) {
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
         <h3>${nama}</h3>
         <p><b>Kode: ${kode}</b></p>
-        <p style="color:red; font-size:1.6em; font-weight:bold;">${jumlahVal}</p>
+        <p style="color:red; font-size:1.2em; font-weight:bold; margin:6px 0;">${jumlahVal}</p>
       `;
+      // penting: arahkan ke detail dengan material & kode
+      card.onclick = () => {
+        window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
+      };
       container.appendChild(card);
     } else {
       kosongList.push({ nama, kode });
@@ -118,7 +132,7 @@ async function loadMaterialKurang() {
   });
 
   const btnKosong = document.createElement("button");
-  btnKosong.textContent = "🔍 Lihat Material Kosong";
+  btnKosong.textContent = `🔍 Lihat Material Kosong (${kosongList.length})`;
   btnKosong.style = "margin-top:20px; padding:10px 20px; display:block; margin:auto;";
   btnKosong.onclick = () => {
     sessionStorage.setItem("kosongData", JSON.stringify(kosongList));
