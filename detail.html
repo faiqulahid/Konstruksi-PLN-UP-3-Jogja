@@ -1,133 +1,281 @@
-<script src="config.js"></script>
-<script>
-async function loadDetail() {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const kategori = params.get("kategori");
-    const material = params.get("material");
-    const kodeMaterial = params.get("kode");
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Detail Material</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* sedikit styling agar langsung rapi */
+    .header-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-top:12px; }
+    .nav-buttons { text-align:center; margin:12px 0; }
+    .btn { padding:8px 12px; margin:0 6px; border:none; border-radius:6px; cursor:pointer; background:#007AC3; color:#fff; }
+    #filterContainer { text-align:center; margin:12px 0; }
+    #filterContainer input, #filterContainer select { padding:6px 8px; margin:4px; border-radius:6px; border:1px solid #ccc; width:180px; }
+    table { width:100%; border-collapse:collapse; }
+    table th, table td { padding:8px 6px; border:1px solid #ddd; text-align:center; }
+    .card { cursor:pointer; } /* in case reused */
+  </style>
+</head>
+<body>
+  <div class="header-row">
+    <img src="assets/logo-pln.png" alt="PLN" style="width:56px;height:auto;">
+    <h1>⚡ DETAIL MATERIAL PLN ⚡</h1>
+  </div>
 
-    const judul = document.getElementById("judulUtama");
-    const sub = document.getElementById("subJudul");
-    const tbody = document.querySelector("#detailTable tbody");
-    const thead = document.querySelector("#tableHeader");
-    tbody.innerHTML = "";
+  <div class="nav-buttons">
+    <button class="btn" onclick="goBack()">⬅️ Kembali</button>
+    <button class="btn" onclick="goHome()">🏠 Home</button>
+    <button class="btn" onclick="resetFilters()">🔄 Reset Filter</button>
+  </div>
 
-    // ============ DETAIL DARI DAFTAR TUNGGU ============
-    if (kategori) {
-      judul.textContent = kategori;
-      sub.textContent = "Daftar Pelanggan";
-      const range = "DAFTAR TUNGGU!A2:L3145";
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const values = data.values || [];
+  <div style="text-align:center;">
+    <h2 id="judulUtama"></h2>
+    <h3 id="subJudul" style="color:#555; margin-top:-8px;"></h3>
+  </div>
 
-      thead.innerHTML = `
-        <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-        <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
-      `;
+  <div id="filterContainer"></div>
 
-      let no = 1;
-      values.forEach(r => {
-        if (r[11] === kategori) {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${no++}</td>
-            <td>${r[2] || ''}</td>
-            <td>${r[3] || ''}</td>
-            <td>${r[4] || ''}</td>
-            <td>${r[6] || ''}</td>
-            <td>${r[7] || ''}</td>
-            <td>${r[8] || ''}</td>
-            <td>${r[9] || ''}</td>
+  <div style="max-width:95%; margin:auto;">
+    <table id="detailTable">
+      <thead style="background:#007AC3; color:white;">
+        <tr id="tableHeader"></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="config.js"></script>
+  <script>
+    function goBack(){ history.back(); }
+    function goHome(){ location.href = "index.html"; }
+
+    // helper: create input or select and return element
+    function createInput(id, placeholder){ const i = document.createElement("input"); i.id=id; i.placeholder=placeholder; return i; }
+    function createSelect(id, opts){ const s = document.createElement("select"); s.id=id; opts.forEach(o=>{ const el=document.createElement("option"); el.value=o.value; el.textContent=o.label; s.appendChild(el); }); return s; }
+
+    async function loadDetail(){
+      try {
+        const params = new URLSearchParams(location.search);
+        const kategori = params.get("kategori");
+        const material = params.get("material");
+        const kodeMaterial = params.get("kode");
+
+        const judul = document.getElementById("judulUtama");
+        const sub = document.getElementById("subJudul");
+        const tbody = document.querySelector("#detailTable tbody");
+        const thead = document.getElementById("tableHeader");
+        const filterContainer = document.getElementById("filterContainer");
+        tbody.innerHTML = ""; thead.innerHTML = ""; filterContainer.innerHTML = "";
+
+        // ---------- DAFTAR TUNGGU ----------
+        if (kategori) {
+          judul.textContent = kategori;
+          sub.textContent = "Daftar Pelanggan";
+          const range = "DAFTAR TUNGGU!A2:L3145";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const values = data.values || [];
+
+          thead.innerHTML = `
+            <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
+            <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
           `;
-          tbody.appendChild(tr);
+
+          const rows = values.filter(r => r[11] === kategori);
+
+          // buat filter inputs (multi)
+          const fULP = createInput("fULP","Filter ULP");
+          const fBulan = createInput("fBulan","Filter Bulan");
+          const fPrior = createSelect("fPrior",[ {value:"",label:"Semua Prioritas"},{value:"1",label:"1"},{value:"2",label:"2"},{value:"3",label:"3"},{value:"eskalasi",label:"Eskalasi"} ]);
+          const fTarif = createInput("fTarif","Filter Tarif");
+          [fULP,fBulan,fPrior,fTarif].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+
+          function renderDaftar(filtered){
+            tbody.innerHTML = ""; let no=1;
+            filtered.forEach(r=>{
+              const tr=document.createElement("tr");
+              tr.innerHTML = `
+                <td>${no++}</td>
+                <td>${r[2]||''}</td>
+                <td>${r[3]||''}</td>
+                <td>${r[4]||''}</td>
+                <td>${r[6]||''}</td>
+                <td>${r[7]||''}</td>
+                <td>${r[8]||''}</td>
+                <td>${r[9]||''}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+
+          // initial render
+          renderDaftar(rows);
+
+          // listeners for multi-filter (AND)
+          [fULP,fBulan,fPrior,fTarif].forEach(el=>{
+            el.addEventListener("input", ()=>{
+              const ulpVal=(fULP.value||"").toLowerCase();
+              const bulanVal=(fBulan.value||"").toLowerCase();
+              const priorVal=(fPrior.value||"").toLowerCase();
+              const tarifVal=(fTarif.value||"").toLowerCase();
+              const filtered = rows.filter(r=>{
+                const ulp=(r[2]||"").toLowerCase();
+                const bulan=(r[3]||"").toLowerCase();
+                const prior=(r[4]||"").toLowerCase();
+                const tarif=(r[6]||"").toLowerCase();
+                if (ulpVal && !ulp.includes(ulpVal)) return false;
+                if (bulanVal && !bulan.includes(bulanVal)) return false;
+                if (tarifVal && !tarif.includes(tarifVal)) return false;
+                if (priorVal && !prior.startsWith(priorVal)) return false; // exact-ish for numbers
+                return true;
+              });
+              renderDaftar(filtered);
+            });
+          });
         }
+
+        // ---------- STOCK MATERIAL (detail by kode) ----------
+        if (material && kodeMaterial) {
+          judul.textContent = material;
+          sub.textContent = `Kode Material: ${kodeMaterial}`;
+
+          // ambil detail stock
+          const rangeStock = "DETAIL STOCK MATERIAL!B2:Q";
+          const urlStock = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${rangeStock}?key=${CONFIG.API_KEY}`;
+          const resStock = await fetch(urlStock);
+          const dataStock = await resStock.json();
+          const rowsStock = dataStock.values || [];
+
+          // kode material ada di kolom F => index 4 karena range mulai B
+          const filteredStock = rowsStock.filter(r => (r[4]||"").trim() === (kodeMaterial||"").trim());
+
+          thead.innerHTML = `
+            <th>No</th><th>Nomor SPB</th><th>Vendor Pelaksana</th>
+            <th>Awal</th><th>Akhir</th><th>Jumlah SPB</th>
+            <th>Jumlah Diterima</th><th>Tgl Terima</th><th>Nilai SPB</th>
+          `;
+
+          function renderStock(list){
+            tbody.innerHTML=""; let no=1;
+            list.forEach(r=>{
+              const tr=document.createElement("tr");
+              tr.innerHTML = `
+                <td>${no++}</td>
+                <td>${r[0]||''}</td>
+                <td>${r[1]||''}</td>
+                <td>${r[2]||''}</td>
+                <td>${r[3]||''}</td>
+                <td>${r[5]||''}</td>
+                <td>${r[6]||''}</td>
+                <td>${r[7]||''}</td>
+                <td>${r[15]||''}</td>
+              `;
+              tbody.appendChild(tr);
+            });
+          }
+
+          renderStock(filteredStock);
+
+          // Filter inputs for stock (vendor, tanggal)
+          const fVendor = createInput("fVendor","Filter Vendor");
+          const fTgl = createInput("fTgl","Filter Tgl Terima");
+          [fVendor,fTgl].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+          [fVendor,fTgl].forEach(el=>{
+            el.addEventListener("input", ()=>{
+              const v=(fVendor.value||"").toLowerCase();
+              const t=(fTgl.value||"").toLowerCase();
+              const filtered = filteredStock.filter(r=>{
+                const vendor=(r[1]||"").toLowerCase();
+                const tgl=(r[7]||"").toLowerCase();
+                if (v && !vendor.includes(v)) return false;
+                if (t && !tgl.includes(t)) return false;
+                return true;
+              });
+              renderStock(filtered);
+            });
+          });
+
+          // if no stock found -> fallback to DETAIL MATERIAL KURANG
+          if (filteredStock.length === 0) {
+            // fetch DETAIL MATERIAL KURANG
+            const rangeKurang = "DETAIL MATERIAL KURANG!B2:L";
+            const urlKurang = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${rangeKurang}?key=${CONFIG.API_KEY}`;
+            const resKurang = await fetch(urlKurang);
+            const dataKurang = await resKurang.json();
+            const rowsKurang = dataKurang.values || [];
+
+            // kode material is in column I => index 7 (since range starts B)
+            const filteredKurang = rowsKurang.filter(r => (r[7]||"").trim() === (kodeMaterial||"").trim());
+
+            thead.innerHTML = `
+              <th>No</th><th>No. SPK</th><th>Nama Pelanggan</th><th>Alamat</th>
+              <th>Rayon</th><th>Vendor</th><th>Tarif</th><th>Tanggal</th><th>Jumlah</th>
+            `;
+            function renderKurang(list){
+              tbody.innerHTML=""; let no=1;
+              list.forEach(r=>{
+                const tr=document.createElement("tr");
+                tr.innerHTML = `
+                  <td>${no++}</td>
+                  <td>${r[0]||''}</td>
+                  <td>${r[1]||''}</td>
+                  <td>${r[2]||''}</td>
+                  <td>${r[3]||''}</td>
+                  <td>${r[4]||''}</td>
+                  <td>${r[5]||''}</td>
+                  <td>${r[9]||''}</td>
+                  <td>${r[10]||''}</td>
+                `;
+                tbody.appendChild(tr);
+              });
+            }
+            renderKurang(filteredKurang);
+
+            // provide filters for rayon/vendor for this fallback view
+            const fRayon = createInput("fRayon","Filter Rayon");
+            const fVendorK = createInput("fVendorK","Filter Vendor");
+            [fRayon,fVendorK].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+
+            [fRayon,fVendorK].forEach(el=>{
+              el.addEventListener("input", ()=>{
+                const rv=(fRayon.value||"").toLowerCase();
+                const vv=(fVendorK.value||"").toLowerCase();
+                const filtered = filteredKurang.filter(r=>{
+                  const rayon=(r[3]||"").toLowerCase();
+                  const vendor=(r[4]||"").toLowerCase();
+                  if (rv && !rayon.includes(rv)) return false;
+                  if (vv && !vendor.includes(vv)) return false;
+                  return true;
+                });
+                renderKurang(filtered);
+              });
+            });
+
+            if (filteredKurang.length === 0) {
+              tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
+            }
+          }
+        }
+
+      } catch (err) {
+        console.error("Error loadDetail:", err);
+        document.querySelector("#detailTable tbody").innerHTML =
+          `<tr><td colspan="9" style="color:red;">Terjadi kesalahan saat memuat data. Cek console.</td></tr>`;
+      }
+    }
+
+    function resetFilters(){
+      document.querySelectorAll("#filterContainer input, #filterContainer select").forEach(i=>i.value="");
+      // trigger input events if any
+      document.querySelectorAll("#filterContainer input, #filterContainer select").forEach(i=>{
+        i.dispatchEvent(new Event('input'));
       });
     }
 
-    // ============ DETAIL DARI STOCK MATERIAL ============
-    if (material && kodeMaterial) {
-      judul.textContent = material;
-      sub.textContent = `Kode Material: ${kodeMaterial}`;
-
-      // Ambil data dari DETAIL STOCK MATERIAL
-      const rangeStock = "DETAIL STOCK MATERIAL!B2:Q";
-      const urlStock = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${rangeStock}?key=${CONFIG.API_KEY}`;
-      const resStock = await fetch(urlStock);
-      const dataStock = await resStock.json();
-      const rowsStock = dataStock.values || [];
-
-      // Filter berdasarkan kolom F (index 4)
-      const filteredStock = rowsStock.filter(r => (r[4] || "").trim() === kodeMaterial.trim());
-      if (filteredStock.length > 0) {
-        thead.innerHTML = `
-          <th>No</th><th>Nomor SPB</th><th>Vendor Pelaksana</th>
-          <th>Awal</th><th>Akhir</th><th>Jumlah SPB</th>
-          <th>Jumlah Diterima</th><th>Tgl Terima</th><th>Nilai SPB</th>
-        `;
-
-        let no = 1;
-        filteredStock.forEach(r => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${no++}</td>
-            <td>${r[0] || ''}</td>
-            <td>${r[1] || ''}</td>
-            <td>${r[2] || ''}</td>
-            <td>${r[3] || ''}</td>
-            <td>${r[5] || ''}</td>
-            <td>${r[6] || ''}</td>
-            <td>${r[7] || ''}</td>
-            <td>${r[15] || ''}</td>
-          `;
-          tbody.appendChild(tr);
-        });
-      } else {
-        // Jika tidak ditemukan di STOCK MATERIAL, cek di DETAIL MATERIAL KURANG
-        const rangeKurang = "DETAIL MATERIAL KURANG!B2:L";
-        const urlKurang = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${rangeKurang}?key=${CONFIG.API_KEY}`;
-        const resKurang = await fetch(urlKurang);
-        const dataKurang = await resKurang.json();
-        const rowsKurang = dataKurang.values || [];
-
-        // Kolom I = index 7 (karena mulai dari B)
-        const filteredKurang = rowsKurang.filter(r => (r[7] || "").trim() === kodeMaterial.trim());
-
-        thead.innerHTML = `
-          <th>No</th><th>No. SPK</th><th>Nama Pelanggan</th><th>Alamat</th>
-          <th>Rayon</th><th>Vendor</th><th>Tarif</th><th>Tanggal</th><th>Jumlah</th>
-        `;
-
-        let no = 1;
-        filteredKurang.forEach(r => {
-          const tr = document.createElement("tr");
-          tr.innerHTML = `
-            <td>${no++}</td>
-            <td>${r[0] || ''}</td> <!-- B -->
-            <td>${r[1] || ''}</td> <!-- C -->
-            <td>${r[2] || ''}</td> <!-- D -->
-            <td>${r[3] || ''}</td> <!-- E -->
-            <td>${r[4] || ''}</td> <!-- F -->
-            <td>${r[5] || ''}</td> <!-- G -->
-            <td>${r[9] || ''}</td> <!-- K -->
-            <td>${r[10] || ''}</td> <!-- L -->
-          `;
-          tbody.appendChild(tr);
-        });
-
-        if (filteredKurang.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
-        }
-      }
-    }
-  } catch (err) {
-    console.error("Error di loadDetail():", err);
-    const tbody = document.querySelector("#detailTable tbody");
-    tbody.innerHTML = `<tr><td colspan="9" style="color:red;">Terjadi kesalahan saat memuat data.</td></tr>`;
-  }
-}
-
-loadDetail();
-</script>
+    // jalankan
+    loadDetail();
+  </script>
+</body>
+</html>
