@@ -166,3 +166,22 @@ window.addEventListener("load", () => {
   autoHighlightMenu();
 });
 
+function autoShowDashboard() {
+  const menuTypes = ['daftarTunggu', 'stockMaterial', 'materialKurang'];
+  let index = 0;
+
+  // jalankan loadDashboard pertama kali
+  loadDashboard(menuTypes[index]);
+
+  setInterval(() => {
+    // pindah ke dashboard berikutnya
+    index = (index + 1) % menuTypes.length;
+    loadDashboard(menuTypes[index]);
+  }, 5000); // ganti setiap 5 detik
+}
+
+// jalankan autoplay saat halaman load
+window.addEventListener("load", () => {
+  autoHighlightMenu(); // animasi tombol
+  autoShowDashboard(); // tampilkan konten summary otomatis
+});
