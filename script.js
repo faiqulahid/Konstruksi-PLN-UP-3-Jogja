@@ -143,13 +143,14 @@ async function loadMaterialKurang() {
   container.appendChild(btnKosong);
 }
 
-function autoShowDashboardStepByStep() {
+function autoShowDashboardOneByOne() {
   const menuTypes = ['daftarTunggu', 'stockMaterial', 'materialKurang'];
   const buttons = document.querySelectorAll(".nav-btn");
   let menuIndex = 0;
+  let cardIndex = 0;
 
   function showMenu(menuType) {
-    // highlight tombol saat menu tampil
+    // highlight tombol menu aktif
     buttons.forEach(btn => btn.classList.remove("highlight"));
     const btn = buttons[menuIndex];
     btn.classList.add("highlight");
@@ -158,33 +159,46 @@ function autoShowDashboardStepByStep() {
     loadDashboard(menuType).then(() => {
       const container = document.getElementById("chartContainer");
       const cards = container.querySelectorAll(".card");
-      let cardIndex = 0;
+      cardIndex = 0;
 
-      // sembunyikan semua card dulu
+      // sembunyikan semua card
       cards.forEach(c => c.style.display = "none");
+
+      if (cards.length === 0) {
+        // jika tidak ada card, pindah ke menu berikutnya
+        setTimeout(nextMenu, 2000);
+        return;
+      }
 
       // tampilkan card satu per satu
       const cardTimer = setInterval(() => {
+        // sembunyikan card sebelumnya
+        cards.forEach(c => c.style.display = "none");
+
+        // tampilkan card sekarang
+        cards[cardIndex].style.display = "block";
+
+        cardIndex++;
         if (cardIndex >= cards.length) {
           clearInterval(cardTimer);
-          // setelah selesai semua card, pindah ke menu berikutnya setelah delay
-          setTimeout(() => {
-            menuIndex = (menuIndex + 1) % menuTypes.length;
-            showMenu(menuTypes[menuIndex]);
-          }, 2000); // jeda antar menu
-          return;
+          // setelah semua card selesai, pindah ke menu berikutnya setelah delay
+          setTimeout(nextMenu, 2000);
         }
-        cards[cardIndex].style.display = "block";
-        cardIndex++;
-      }, 800); // jeda antar card, 0.8 detik
+      }, 1500); // jeda antar card 1.5 detik
     });
+  }
+
+  function nextMenu() {
+    menuIndex = (menuIndex + 1) % menuTypes.length;
+    showMenu(menuTypes[menuIndex]);
   }
 
   // mulai dari menu pertama
   showMenu(menuTypes[menuIndex]);
 }
 
-// jalankan otomatis saat halaman load
+// jalankan saat halaman load
 window.addEventListener("load", () => {
-  autoShowDashboardStepByStep();
+  autoShowDashboardOneByOne();
 });
+
