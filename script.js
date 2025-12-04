@@ -1,136 +1,47 @@
 // script.js (FINAL)
 // Pastikan config.js ter-load sebelum file ini (CONFIG.SHEET_ID, CONFIG.API_KEY)
 
-async function loadDashboard(type, ulp) {
-  if (type === "daftarTunggu") await loadDaftarTunggu(ulp);
+async function loadDashboard(type) {
+  if (type === "daftarTunggu") await loadDaftarTunggu();
   else if (type === "stockMaterial") await loadStockMaterial();
   else if (type === "materialKurang") await loadMaterialKurang();
 }
 
 // ===================== DAFTAR TUNGGU =====================
-async function loadDaftarTunggu(ulp) {
-  // Jika tidak dikirim, ambil dari URL (opsional)
-  const filterULP = ulp || new URLSearchParams(window.location.search).get("ulp");
-  if (!filterULP) return;
-
-  const range = "DAFTAR TUNGGU!A1:BS";
-  const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-  const res = await fetch(apiUrl);
+async function loadDaftarTunggu() {
+  const range = "DAFTAR TUNGGU!A1:L3145";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+  const res = await fetch(url);
   const data = await res.json();
   const values = data.values || [];
-
-  const headers = values[0]; // row header
   const rows = values.slice(1);
 
-  const materialStart = 12; // kolom M
-  const materialEnd = 71;   // kolom BS
+  // ULP berada di kolom C → index 2
+  const kategoriCol = 2;
+  const kategoriCount = {};
 
-  const tableBody = document.getElementById("tBody");
-  tableBody.innerHTML = "";
+  rows.forEach(r => {
+    const ulp = r[kategoriCol] || "ULP Tidak Terisi";
+    kategoriCount[ulp] = (kategoriCount[ulp] || 0) + 1;
+  });
 
-  const filtered = rows.filter(r => r[2] === filterULP);
+  const container = document.getElementById("chartContainer");
+  container.innerHTML = "";
 
-  if (filtered.length === 0) {
-    tableBody.innerHTML = `<tr><td colspan="11" style="text-align:center; color:red;">⚠️ Tidak ada data Daftar Tunggu untuk '${filterULP}'.</td></tr>`;
-    return;
-  }
-
-  filtered.forEach((r, idx) => {
-    const tr = document.createElement("tr");
-
-    tr.innerHTML = `
-      <td>${idx + 1}</td>
-      <td>${r[3] || ""}</td> <!-- Bulan -->
-      <td>${r[4] || ""}</td> <!-- Prioritas -->
-      <td>${r[5] || ""}</td> <!-- Nama Pelanggan -->
-      <td>${r[6] || ""}</td> <!-- Tarif -->
-      <td>${r[7] || ""}</td> <!-- Daya Lama -->
-      <td>${r[8] || ""}</td> <!-- Daya Baru -->
-      <td>${r[9] || ""}</td> <!-- Jumlah -->
-      <td>${r[10] || ""}</td> <!-- Total Daya Baru -->
-      <td>${r[11] || ""}</td> <!-- Klasifikasi -->
-      <td style="text-align:center; cursor:pointer;"><button class="detail-btn">➜</button></td>
+  Object.entries(kategoriCount).forEach(([ulp, jumlah]) => {
+    const card = document.createElement("div");
+    card.className = "card";
+    card.innerHTML = `
+      <h3>${ulp}</h3>
+      <p style="font-size:2em; font-weight:bold; color:#007AC3; margin:6px 0;">${jumlah}</p>
     `;
-
-    const btn = tr.querySelector(".detail-btn");
-
-    btn.addEventListener("click", (e) => {
-      e.stopPropagation();
-
-      // cek apakah panel sudah ada
-      const next = tr.nextElementSibling;
-      if (next && next.classList.contains("material-panel")) {
-        next.remove();
-        btn.textContent = "➜";
-        return;
-      }
-
-      // tutup panel lain
-      document.querySelectorAll(".material-panel").forEach(p => p.remove());
-      document.querySelectorAll(".detail-btn").forEach(b => b.textContent = "➜");
-      btn.textContent = "▼";
-
-      // buat row panel
-      const panel = document.createElement("tr");
-      panel.className = "material-panel";
-      const td = document.createElement("td");
-      td.colSpan = 11;
-      td.style.padding = "12px";
-      td.style.background = "#fafafa";
-
-      // Info pelanggan
-      const infoHTML = `
-        <b>Nama Pelanggan:</b> ${r[5] || ""}<br>
-        <b>Daya Lama:</b> ${r[7] || ""}<br>
-        <b>Daya Baru:</b> ${r[8] || ""}<br>
-        <b>Jumlah:</b> ${r[9] || ""}
-        <hr>
-      `;
-
-      // Tabel material
-      const tbl = document.createElement("table");
-      tbl.style.width = "100%";
-      tbl.style.borderCollapse = "collapse";
-      tbl.innerHTML = `
-        <thead>
-          <tr>
-            <th>Kode</th>
-            <th>Nama Material</th>
-            <th>Satuan</th>
-            <th>Kebutuhan</th>
-          </tr>
-        </thead>
-        <tbody></tbody>
-      `;
-      const tbodyMat = tbl.querySelector("tbody");
-
-      // ambil kode material M..BS
-      for (let i = materialStart; i <= materialEnd; i++) {
-        const kode = headers[i];
-        const jumlah = r[i];
-        if (!jumlah || jumlah == "0") continue;
-
-        // opsi: nama & satuan bisa ambil dari sheet BAHAN jika diperlukan
-        tbodyMat.innerHTML += `
-          <tr>
-            <td>${kode || ""}</td>
-            <td>(Nama Material)</td>
-            <td>(Satuan)</td>
-            <td>${jumlah}</td>
-          </tr>
-        `;
-      }
-
-      td.innerHTML = infoHTML;
-      td.appendChild(tbl);
-      panel.appendChild(td);
-      tr.parentNode.insertBefore(panel, tr.nextSibling);
-      panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
-    });
-
-    tableBody.appendChild(tr);
+    card.onclick = () => {
+      window.location.href = `detail.html?ulp=${encodeURIComponent(ulp)}`;
+    };
+    container.appendChild(card);
   });
 }
+
 
 // ===================== STOCK MATERIAL =====================
 async function loadStockMaterial() {
@@ -150,6 +61,8 @@ async function loadStockMaterial() {
 
     const stokVal = Number(stok);
     const belumVal = Number(belum);
+
+    // validasi: hanya tampilkan jika stok atau belum (arriving) ada > 0
     const hasStok = !isNaN(stokVal) && stokVal > 0;
     const hasBelum = !isNaN(belumVal) && belumVal > 0;
 
@@ -159,18 +72,20 @@ async function loadStockMaterial() {
       card.innerHTML = `
         <h3>${nama}</h3>
         <p><b>Kode Material: ${kode}</b></p>
-        <p style="color:green; font-weight:bold;">Stok: ${hasStok ? stokVal : 0}</p>
-        <p style="color:red; font-weight:bold;">Belum Datang: ${hasBelum ? belumVal : 0}</p>
+        <p style="color:green; font-size:1.1em; font-weight:bold; margin:6px 0;">Stok: ${hasStok ? stokVal : 0}</p>
+        <p style="color:red; font-size:1.1em; font-weight:bold; margin:6px 0;">Belum Datang: ${hasBelum ? belumVal : 0}</p>
       `;
       card.onclick = () => {
         window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
       };
       container.appendChild(card);
     } else {
+      // stok/jumlah tidak valid atau = 0 -> dianggap kosong
       kosongList.push({ nama, kode });
     }
   });
 
+  // Tombol lihat material kosong + indikator jumlah
   const btnKosong = document.createElement("button");
   btnKosong.textContent = `🔍 Lihat Material Kosong (${kosongList.length})`;
   btnKosong.style = "margin-top:20px; padding:10px 20px; display:block; margin:auto;";
@@ -199,14 +114,16 @@ async function loadMaterialKurang() {
 
     const jumlahVal = Number(jumlah);
 
+    // tampilkan hanya jika jumlah > 0 (butuh material)
     if (!isNaN(jumlahVal) && jumlahVal > 0) {
       const card = document.createElement("div");
       card.className = "card";
       card.innerHTML = `
         <h3>${nama}</h3>
         <p><b>Kode: ${kode}</b></p>
-        <p style="color:red; font-weight:bold;">${jumlahVal}</p>
+        <p style="color:red; font-size:1.2em; font-weight:bold; margin:6px 0;">${jumlahVal}</p>
       `;
+      // penting: arahkan ke detail dengan material & kode
       card.onclick = () => {
         window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
       };
