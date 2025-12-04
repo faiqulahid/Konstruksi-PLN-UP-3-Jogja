@@ -77,28 +77,27 @@
         // determine filter key (ulp has priority)
         const filterKey = (ulpParam && ulpParam.trim() !== "") ? ulpParam.trim() : (kategori || "").trim();
 
-      // ---------- DAFTAR TUNGGU (filter by ULP/kategori) ----------
+     // ---------- DAFTAR TUNGGU (filter by ULP/kategori) ----------
 if (filterKey) {
   judul.textContent = filterKey;
   sub.textContent = "Daftar Pelanggan";
 
-  // ambil data header untuk mengetahui kode material (kolom M..BS)
+  // Ambil header untuk mengetahui kode material (kolom M..BS)
   const hdrRange = "DAFTAR TUNGGU!A1:BS1";
   const hdrUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${hdrRange}?key=${CONFIG.API_KEY}`;
   const hdrRes = await fetch(hdrUrl);
   const hdrData = await hdrRes.json();
   const headerRow = (hdrData.values && hdrData.values[0]) || [];
-  const materialHeaders = headerRow.slice(12); // kolom M = index 12
+  const materialHeaders = headerRow.slice(12); // M = index 12
 
-  // ambil seluruh data baris A2:L... (data utama)
+  // Ambil data utama A2:L
   const range = "DAFTAR TUNGGU!A2:L3145";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
-  const values = data.values || [];
-  const rows = values; // A2 sudah row[0]
+  const rows = data.values || [];
 
-  // ambil sheet BAHAN untuk mapping kode -> nama,satuan
+  // Ambil sheet BAHAN (kode → nama, satuan)
   const bahanRange = "BAHAN!A2:C";
   const bahanUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${bahanRange}?key=${CONFIG.API_KEY}`;
   const bahanRes = await fetch(bahanUrl);
@@ -112,7 +111,7 @@ if (filterKey) {
     if (kode) kodeMap[kode] = { nama, satuan };
   });
 
-  // TABEL HEADER BARU + kolom Detail (panah)
+  // ------------------- TABEL HEADER -------------------
   thead.innerHTML = `
     <th>No</th>
     <th>Bulan</th>
@@ -127,7 +126,7 @@ if (filterKey) {
     <th>Detail</th>
   `;
 
-  // ULP = kolom C => index 2
+  // Filter awal berdasarkan ULP (kolom C / index 2)
   const filteredRows = rows.filter(r => (r[2] || "").trim() === filterKey);
 
   if (filteredRows.length === 0) {
@@ -135,9 +134,12 @@ if (filterKey) {
     emptyMsg.textContent = `⚠️ Tidak ada data Daftar Tunggu untuk '${filterKey}'.`;
   } else {
 
-    // helper: toggle panel material (open/close)
+    // ==========================================================
+    //       FUNGSI — PANEL MATERIAL DETAIL (KEBAWAH)
+    // ==========================================================
     function toggleMaterialPanel(button, rowData) {
-      // jika panel sudah terbuka di bawah tombol's row -> tutup
+
+      // Tutup jika sudah terbuka
       const tr = button.closest("tr");
       const next = tr.nextElementSibling;
       if (next && next.classList.contains("material-panel")) {
@@ -145,45 +147,62 @@ if (filterKey) {
         button.textContent = "➜";
         return;
       }
-      // tutup panel lain jika ada
-      const existing = document.querySelectorAll(".material-panel");
-      existing.forEach(e => e.remove());
-      // ubah ikon
+
+      // Tutup panel lain
+      document.querySelectorAll(".material-panel").forEach(e => e.remove());
       document.querySelectorAll(".detail-btn").forEach(b => b.textContent = "➜");
       button.textContent = "▼";
 
-      // buat row panel
+      // Buat panel baru
       const panel = document.createElement("tr");
       panel.className = "material-panel";
       const colCount = thead.querySelectorAll("th").length;
+
       const cell = document.createElement("td");
       cell.colSpan = colCount;
-      cell.style.padding = "12px";
+      cell.style.padding = "14px";
       cell.style.background = "#fafafa";
 
-      // build inner table vertical
+      // ----------- INFORMASI DETAIL PELANGGAN ----------------
+      const namaPelanggan = rowData[5] || "";
+      const dayaLama = rowData[7] || "";
+      const dayaBaru = rowData[8] || "";
+      const jumlah = rowData[9] || "";
+
+      const headerHTML = `
+        <div style="margin-bottom:14px; font-size:14px; line-height:1.6;">
+          <b>Nama Pelanggan:</b> ${namaPelanggan}<br>
+          <b>Daya Lama:</b> ${dayaLama}<br>
+          <b>Daya Baru:</b> ${dayaBaru}<br>
+          <b>Jumlah:</b> ${jumlah}
+        </div>
+      `;
+
+      // ------------------- TABEL MATERIAL -------------------
       const tbl = document.createElement("table");
       tbl.style.width = "100%";
       tbl.style.borderCollapse = "collapse";
       tbl.innerHTML = `
-        <thead style="background:#f3f6fa;"><tr>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd;">Kode</th>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd;">Nama Material</th>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd;">Satuan</th>
-          <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd; width:140px;">Kebutuhan</th>
-        </tr></thead>
+        <thead style="background:#eef3fa;">
+          <tr>
+            <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd;">Kode</th>
+            <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd;">Nama Material</th>
+            <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd;">Satuan</th>
+            <th style="text-align:left; padding:6px; border-bottom:1px solid #ddd;">Kebutuhan</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       `;
+
       const tb = tbl.querySelector("tbody");
 
-      // material columns start index 12 (kolom M)
-      // in DAFTAR TUNGGU the material values are likely at columns M..BS
-      // materialHeaders array contains header codes corresponding to these columns
+      // Loop material kolom M..BS (index 12 → seterusnya)
       for (let i = 0; i < materialHeaders.length; i++) {
-        const kode = (materialHeaders[i] || "").toString().trim();
-        const cellIndex = 12 + i; // pick value from the full row (A..BS)
-        const jumlah = (rowData[cellIndex] !== undefined) ? rowData[cellIndex] : ""; // may be undefined
-        if (jumlah === "" || jumlah === null || jumlah === 0 || jumlah === "0") continue; // skip empty/zero
+        const kode = (materialHeaders[i] || "").trim();
+        const cellIndex = 12 + i;
+        const jumlahMat = rowData[cellIndex];
+
+        if (!jumlahMat || jumlahMat == "0") continue;
 
         const info = kodeMap[kode] || { nama: "(Nama tidak ditemukan)", satuan: "" };
 
@@ -192,7 +211,7 @@ if (filterKey) {
           <td style="padding:6px; border-bottom:1px solid #eee;">${kode}</td>
           <td style="padding:6px; border-bottom:1px solid #eee;">${info.nama}</td>
           <td style="padding:6px; border-bottom:1px solid #eee;">${info.satuan}</td>
-          <td style="padding:6px; border-bottom:1px solid #eee;">${jumlah}</td>
+          <td style="padding:6px; border-bottom:1px solid #eee;">${jumlahMat}</td>
         `;
         tb.appendChild(trm);
       }
@@ -201,20 +220,24 @@ if (filterKey) {
         tb.innerHTML = `<tr><td colspan="4" style="padding:6px;">Tidak ada material untuk pelanggan ini.</td></tr>`;
       }
 
+      // Combine
+      cell.innerHTML = headerHTML;
       cell.appendChild(tbl);
       panel.appendChild(cell);
 
-      // insert after current row
+      // Masukkan ke tabel
       tr.parentNode.insertBefore(panel, tr.nextSibling);
-      // scroll into view (optional)
       panel.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
-    // render rows with detail button
-    function renderDaftar(filtered) {
+    // ==========================================================
+    //                RENDER TABEL UTAMA
+    // ==========================================================
+    function renderDaftar(list) {
       tbody.innerHTML = "";
       let no = 1;
-      filtered.forEach(r => {
+
+      list.forEach(r => {
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${no++}</td>
@@ -227,36 +250,32 @@ if (filterKey) {
           <td>${r[9] || ""}</td>
           <td>${r[10] || ""}</td>
           <td>${r[11] || ""}</td>
-          <td style="text-align:center;"><button class="detail-btn" type="button">➜</button></td>
+          <td style="text-align:center;">
+            <button class="detail-btn" type="button">➜</button>
+          </td>
         `;
         tbody.appendChild(tr);
 
-        // attach listener to the last button
         const btn = tr.querySelector(".detail-btn");
-        btn.addEventListener("click", (e) => {
+        btn.addEventListener("click", e => {
           e.stopPropagation();
           toggleMaterialPanel(btn, r);
         });
 
-        // optional: click row also open panel
         tr.addEventListener("click", () => {
-          const btnInside = tr.querySelector(".detail-btn");
-          toggleMaterialPanel(btnInside, r);
+          toggleMaterialPanel(btn, r);
         });
       });
     }
 
-    // initial render
+    // Render awal
     renderDaftar(filteredRows);
 
-    // ======================================
-    // FILTER BARU — SESUAI PERMINTAAN ANDA
-    // ======================================
-
-    // input bulan (D)
+    // ==========================================================
+    //                      FILTER MULTI
+    // ==========================================================
     const fBulan = createInput("fBulan", "Filter Bulan");
 
-    // dropdown prioritas (E)
     const fPrior = createSelect("fPrior", [
       { value: "", label: "Semua Prioritas" },
       { value: "1", label: "1" },
@@ -265,31 +284,25 @@ if (filterKey) {
       { value: "eskalasi", label: "Eskalasi" }
     ]);
 
-    // dropdown Tarif (G) → ambil otomatis dari data
     const tarifUnique = [...new Set(filteredRows.map(rr => rr[6]).filter(Boolean))];
     const fTarif = createSelect(
       "fTarif",
       [{ value: "", label: "Semua Tarif" }]
-        .concat(tarifUnique.map(t => ({ value: t, label: t })))
+      .concat(tarifUnique.map(t => ({ value: t, label: t })))
     );
 
-    // dropdown Klasifikasi (L)
     const klasUnique = [...new Set(filteredRows.map(rr => rr[11]).filter(Boolean))];
     const fKlas = createSelect(
       "fKlas",
       [{ value: "", label: "Semua Klasifikasi" }]
-        .concat(klasUnique.map(k => ({ value: k, label: k })))
+      .concat(klasUnique.map(k => ({ value: k, label: k })))
     );
 
-    // tambahkan ke filter container
     [fBulan, fPrior, fTarif, fKlas].forEach(el => {
       el.style.margin = "6px";
       filterContainer.appendChild(el);
     });
 
-    // ===============================
-    // MULTI FILTER — AND CONDITION
-    // ===============================
     [fBulan, fPrior, fTarif, fKlas].forEach(el => {
       el.addEventListener("input", () => {
 
@@ -319,6 +332,8 @@ if (filterKey) {
   }
 
   return; // selesai mode daftar tunggu
+}
+
 }
 
 
