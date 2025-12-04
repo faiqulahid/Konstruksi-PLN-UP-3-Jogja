@@ -7,41 +7,73 @@ async function loadDashboard(type) {
   else if (type === "materialKurang") await loadMaterialKurang();
 }
 
-// ===================== DAFTAR TUNGGU =====================
-async function loadDaftarTunggu() {
-  const range = "DAFTAR TUNGGU!A1:L3145";
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-  const res = await fetch(url);
+async function loadDetailDaftarTunggu() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const ulp = urlParams.get("ulp");
+
+  if (!ulp) return;
+
+  const range = "DAFTAR TUNGGU!A1:BS";
+  const apiUrl = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+  const res = await fetch(apiUrl);
   const data = await res.json();
   const values = data.values || [];
+
+  const headers = values[0];
   const rows = values.slice(1);
 
-  // ULP berada di kolom C → index 2
-  const kategoriCol = 2;
-  const kategoriCount = {};
+  // Kolom material =  M (index 12) sampai BS (index 71)
+  const materialStart = 12;
+  const materialEnd = 71;
 
-  rows.forEach(r => {
-    const ulp = r[kategoriCol] || "ULP Tidak Terisi";
-    kategoriCount[ulp] = (kategoriCount[ulp] || 0) + 1;
-  });
+  const tableBody = document.getElementById("tBody");
+  tableBody.innerHTML = "";
 
-  const container = document.getElementById("chartContainer");
-  container.innerHTML = "";
+  // Filter berdasarkan ULP (kolom C = index 2)
+  const filtered = rows.filter(r => r[2] === ulp);
 
-  Object.entries(kategoriCount).forEach(([ulp, jumlah]) => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = `
-      <h3>${ulp}</h3>
-      <p style="font-size:2em; font-weight:bold; color:#007AC3; margin:6px 0;">${jumlah}</p>
+  filtered.forEach(r => {
+    const tr = document.createElement("tr");
+
+    // Kolom-kolom utama
+    tr.innerHTML = `
+      <td>${r[0] || ""}</td>
+      <td>${r[5] || ""}</td> 
+      <td>${r[7] || ""}</td>
+      <td>${r[8] || ""}</td>
+      <td>${r[9] || ""}</td>
     `;
-    card.onclick = () => {
-      window.location.href = `detail.html?ulp=${encodeURIComponent(ulp)}`;
-    };
-    container.appendChild(card);
+
+    // 🔽 Kolom untuk tombol pindah halaman
+    const tdAction = document.createElement("td");
+    tdAction.style.textAlign = "center";
+    tdAction.style.cursor = "pointer";
+
+    const idMaterial = r[12] || ""; // kolom M
+    const namaPelanggan = r[5] || "";
+    const dayaLama = r[7] || "";
+    const dayaBaru = r[8] || "";
+    const jumlahPlg = r[9] || "";
+
+    tdAction.innerHTML = "➡️";
+
+    // ⛔ Penting: hentikan event lama dari row/table
+    tdAction.addEventListener("click", (e) => {
+      e.stopPropagation(); // agar tidak memicu fitur expand lama
+      
+      window.location.href =
+        `detail_material.html?id=${encodeURIComponent(idMaterial)}` +
+        `&pelanggan=${encodeURIComponent(namaPelanggan)}` +
+        `&dayaLama=${encodeURIComponent(dayaLama)}` +
+        `&dayaBaru=${encodeURIComponent(dayaBaru)}` +
+        `&jumlah=${encodeURIComponent(jumlahPlg)}`;
+    });
+
+    tr.appendChild(tdAction);
+
+    tableBody.appendChild(tr);
   });
 }
-
 
 // ===================== STOCK MATERIAL =====================
 async function loadStockMaterial() {
