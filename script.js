@@ -16,30 +16,32 @@ async function loadDaftarTunggu() {
   const values = data.values || [];
   const rows = values.slice(1);
 
-  const kategoriCol = 11;
+  // ULP berada di kolom C → index 2
+  const kategoriCol = 2;
   const kategoriCount = {};
 
   rows.forEach(r => {
-    const kategori = r[kategoriCol] || "Tidak Ada Kategori";
-    kategoriCount[kategori] = (kategoriCount[kategori] || 0) + 1;
+    const ulp = r[kategoriCol] || "ULP Tidak Terisi";
+    kategoriCount[ulp] = (kategoriCount[ulp] || 0) + 1;
   });
 
   const container = document.getElementById("chartContainer");
   container.innerHTML = "";
 
-  Object.entries(kategoriCount).forEach(([kategori, jumlah]) => {
+  Object.entries(kategoriCount).forEach(([ulp, jumlah]) => {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <h3>${kategori}</h3>
+      <h3>${ulp}</h3>
       <p style="font-size:2em; font-weight:bold; color:#007AC3; margin:6px 0;">${jumlah}</p>
     `;
     card.onclick = () => {
-      window.location.href = `detail.html?kategori=${encodeURIComponent(kategori)}`;
+      window.location.href = `detail.html?ulp=${encodeURIComponent(ulp)}`;
     };
     container.appendChild(card);
   });
 }
+
 
 // ===================== STOCK MATERIAL =====================
 async function loadStockMaterial() {
