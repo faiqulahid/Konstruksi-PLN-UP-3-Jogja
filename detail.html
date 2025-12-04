@@ -15,6 +15,7 @@
     table { width:100%; border-collapse:collapse; }
     table th, table td { padding:8px 6px; border:1px solid #ddd; text-align:center; }
     .card { cursor:pointer; } /* in case reused */
+    .msg { text-align:center; color:#555; margin:18px 0; }
   </style>
 </head>
 <body>
@@ -43,6 +44,7 @@
       </thead>
       <tbody></tbody>
     </table>
+    <div id="emptyMsg" class="msg" style="display:none;"></div>
   </div>
 
   <script src="config.js"></script>
@@ -57,7 +59,10 @@
     async function loadDetail(){
       try {
         const params = new URLSearchParams(location.search);
-        const kategori = params.get("kategori");
+
+        // accept both old param names and new ones
+        const ulpParam = params.get("ulp");               // NEW: from dashboard cards
+        const kategori = params.get("kategori");         // BACKWARD: support old links
         const material = params.get("material");
         const kodeMaterial = params.get("kode");
 
@@ -66,78 +71,88 @@
         const tbody = document.querySelector("#detailTable tbody");
         const thead = document.getElementById("tableHeader");
         const filterContainer = document.getElementById("filterContainer");
-        tbody.innerHTML = ""; thead.innerHTML = ""; filterContainer.innerHTML = "";
+        const emptyMsg = document.getElementById("emptyMsg");
+        tbody.innerHTML = ""; thead.innerHTML = ""; filterContainer.innerHTML = ""; emptyMsg.style.display = "none"; emptyMsg.textContent = "";
 
-      // ---------- DAFTAR TUNGGU ----------
-const filterKey = ulpParam || kategori; // support both ?ulp=... dan ?kategori=...
-if (filterKey) {
-  judul.textContent = filterKey;
-  sub.textContent = "Daftar Pelanggan";
-  const range = "DAFTAR TUNGGU!A2:L3145";
-  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-  const res = await fetch(url);
-  const data = await res.json();
-  const values = data.values || [];
+        // determine filter key (ulp has priority)
+        const filterKey = (ulpParam && ulpParam.trim() !== "") ? ulpParam.trim() : (kategori || "").trim();
 
-  thead.innerHTML = `
-    <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-    <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
-  `;
+        // ---------- DAFTAR TUNGGU (filter by ULP/kategori) ----------
+        if (filterKey) {
+          judul.textContent = filterKey;
+          sub.textContent = "Daftar Pelanggan";
+          const range = "DAFTAR TUNGGU!A2:L3145";
+          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+          const res = await fetch(url);
+          const data = await res.json();
+          const values = data.values || [];
+          const rows = values; // already starting A2
 
-  // filter berdasarkan ULP di kolom C => index 2
-  const rows = values.filter(r => (r[2]||"").trim() === (filterKey||"").trim());
+          thead.innerHTML = `
+            <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
+            <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
+          `;
 
-  // buat filter inputs (multi)
-  const fULP = createInput("fULP","Filter ULP");
-  const fBulan = createInput("fBulan","Filter Bulan");
-  const fPrior = createSelect("fPrior",[ {value:"",label:"Semua Prioritas"},{value:"1",label:"1"},{value:"2",label:"2"},{value:"3",label:"3"},{value:"eskalasi",label:"Eskalasi"} ]);
-  const fTarif = createInput("fTarif","Filter Tarif");
-  [fULP,fBulan,fPrior,fTarif].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+          // ULP = kolom C => index 2 (A2 = row[0] => A)
+          const filteredRows = rows.filter(r => (r[2]||"").trim() === filterKey);
 
-  function renderDaftar(filtered){
-    tbody.innerHTML = ""; let no=1;
-    filtered.forEach(r=>{
-      const tr=document.createElement("tr");
-      tr.innerHTML = `
-        <td>${no++}</td>
-        <td>${r[2]||''}</td>
-        <td>${r[3]||''}</td>
-        <td>${r[4]||''}</td>
-        <td>${r[6]||''}</td>
-        <td>${r[7]||''}</td>
-        <td>${r[8]||''}</td>
-        <td>${r[9]||''}</td>
-      `;
-      tbody.appendChild(tr);
-    });
-  }
+          if (filteredRows.length === 0) {
+            emptyMsg.style.display = "block";
+            emptyMsg.textContent = `⚠️ Tidak ada data Daftar Tunggu untuk '${filterKey}'.`;
+          } else {
+            function renderDaftar(filtered){
+              tbody.innerHTML = ""; let no=1;
+              filtered.forEach(r=>{
+                const tr=document.createElement("tr");
+                tr.innerHTML = `
+                  <td>${no++}</td>
+                  <td>${r[2]||''}</td>
+                  <td>${r[3]||''}</td>
+                  <td>${r[4]||''}</td>
+                  <td>${r[6]||''}</td>
+                  <td>${r[7]||''}</td>
+                  <td>${r[8]||''}</td>
+                  <td>${r[9]||''}</td>
+                `;
+                tbody.appendChild(tr);
+              });
+            }
 
-  // initial render
-  renderDaftar(rows);
+            // initial render
+            renderDaftar(filteredRows);
 
-  // listeners for multi-filter (AND)
-  [fULP,fBulan,fPrior,fTarif].forEach(el=>{
-    el.addEventListener("input", ()=>{
-      const ulpVal=(fULP.value||"").toLowerCase();
-      const bulanVal=(fBulan.value||"").toLowerCase();
-      const priorVal=(fPrior.value||"").toLowerCase();
-      const tarifVal=(fTarif.value||"").toLowerCase();
-      const filtered = rows.filter(r=>{
-        const ulp=(r[2]||"").toLowerCase();
-        const bulan=(r[3]||"").toLowerCase();
-        const prior=(r[4]||"").toLowerCase();
-        const tarif=(r[6]||"").toLowerCase();
-        if (ulpVal && !ulp.includes(ulpVal)) return false;
-        if (bulanVal && !bulan.includes(bulanVal)) return false;
-        if (tarifVal && !tarif.includes(tarifVal)) return false;
-        if (priorVal && !prior.startsWith(priorVal)) return false; // exact-ish for numbers
-        return true;
-      });
-      renderDaftar(filtered);
-    });
-  });
-}
+            // buat filter inputs (multi)
+            const fULP = createInput("fULP","Filter ULP");
+            const fBulan = createInput("fBulan","Filter Bulan");
+            const fPrior = createSelect("fPrior",[ {value:"",label:"Semua Prioritas"},{value:"1",label:"1"},{value:"2",label:"2"},{value:"3",label:"3"},{value:"eskalasi",label:"Eskalasi"} ]);
+            const fTarif = createInput("fTarif","Filter Tarif");
+            [fULP,fBulan,fPrior,fTarif].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
 
+            // listeners for multi-filter (AND)
+            [fULP,fBulan,fPrior,fTarif].forEach(el=>{
+              el.addEventListener("input", ()=>{
+                const ulpVal=(fULP.value||"").toLowerCase();
+                const bulanVal=(fBulan.value||"").toLowerCase();
+                const priorVal=(fPrior.value||"").toLowerCase();
+                const tarifVal=(fTarif.value||"").toLowerCase();
+                const filtered = filteredRows.filter(r=>{
+                  const ulp=(r[2]||"").toLowerCase();
+                  const bulan=(r[3]||"").toLowerCase();
+                  const prior=(r[4]||"").toLowerCase();
+                  const tarif=(r[6]||"").toLowerCase();
+                  if (ulpVal && !ulp.includes(ulpVal)) return false;
+                  if (bulanVal && !bulan.includes(bulanVal)) return false;
+                  if (tarifVal && !tarif.includes(tarifVal)) return false;
+                  if (priorVal && !prior.startsWith(priorVal)) return false;
+                  return true;
+                });
+                renderDaftar(filtered);
+              });
+            });
+          }
+
+          return; // selesai mode daftar tunggu
+        }
 
         // ---------- STOCK MATERIAL (detail by kode) ----------
         if (material && kodeMaterial) {
@@ -160,63 +175,11 @@ if (filterKey) {
             <th>Jumlah Diterima</th><th>Tgl Terima</th><th>Nilai SPB</th>
           `;
 
-          function renderStock(list){
-            tbody.innerHTML=""; let no=1;
-            list.forEach(r=>{
-              const tr=document.createElement("tr");
-              tr.innerHTML = `
-                <td>${no++}</td>
-                <td>${r[0]||''}</td>
-                <td>${r[1]||''}</td>
-                <td>${r[2]||''}</td>
-                <td>${r[3]||''}</td>
-                <td>${r[5]||''}</td>
-                <td>${r[6]||''}</td>
-                <td>${r[7]||''}</td>
-                <td>${r[15]||''}</td>
-              `;
-              tbody.appendChild(tr);
-            });
-          }
-
-          renderStock(filteredStock);
-
-          // Filter inputs for stock (vendor, tanggal)
-          const fVendor = createInput("fVendor","Filter Vendor");
-          const fTgl = createInput("fTgl","Filter Tgl Terima");
-          [fVendor,fTgl].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
-          [fVendor,fTgl].forEach(el=>{
-            el.addEventListener("input", ()=>{
-              const v=(fVendor.value||"").toLowerCase();
-              const t=(fTgl.value||"").toLowerCase();
-              const filtered = filteredStock.filter(r=>{
-                const vendor=(r[1]||"").toLowerCase();
-                const tgl=(r[7]||"").toLowerCase();
-                if (v && !vendor.includes(v)) return false;
-                if (t && !tgl.includes(t)) return false;
-                return true;
-              });
-              renderStock(filtered);
-            });
-          });
-
-          // if no stock found -> fallback to DETAIL MATERIAL KURANG
           if (filteredStock.length === 0) {
-            // fetch DETAIL MATERIAL KURANG
-            const rangeKurang = "DETAIL MATERIAL KURANG!B2:L";
-            const urlKurang = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${rangeKurang}?key=${CONFIG.API_KEY}`;
-            const resKurang = await fetch(urlKurang);
-            const dataKurang = await resKurang.json();
-            const rowsKurang = dataKurang.values || [];
-
-            // kode material is in column I => index 7 (since range starts B)
-            const filteredKurang = rowsKurang.filter(r => (r[7]||"").trim() === (kodeMaterial||"").trim());
-
-            thead.innerHTML = `
-              <th>No</th><th>No. SPK</th><th>Nama Pelanggan</th><th>Alamat</th>
-              <th>Rayon</th><th>Vendor</th><th>Tarif</th><th>Tanggal</th><th>Jumlah</th>
-            `;
-            function renderKurang(list){
+            emptyMsg.style.display = "block";
+            emptyMsg.textContent = `⚠️ Tidak ada data stock untuk kode ${kodeMaterial}. Mencari di DETAIL MATERIAL KURANG...`;
+          } else {
+            function renderStock(list){
               tbody.innerHTML=""; let no=1;
               list.forEach(r=>{
                 const tr=document.createElement("tr");
@@ -226,42 +189,102 @@ if (filterKey) {
                   <td>${r[1]||''}</td>
                   <td>${r[2]||''}</td>
                   <td>${r[3]||''}</td>
-                  <td>${r[4]||''}</td>
                   <td>${r[5]||''}</td>
-                  <td>${r[9]||''}</td>
-                  <td>${r[10]||''}</td>
+                  <td>${r[6]||''}</td>
+                  <td>${r[7]||''}</td>
+                  <td>${r[15]||''}</td>
                 `;
                 tbody.appendChild(tr);
               });
             }
-            renderKurang(filteredKurang);
+            renderStock(filteredStock);
 
-            // provide filters for rayon/vendor for this fallback view
-            const fRayon = createInput("fRayon","Filter Rayon");
-            const fVendorK = createInput("fVendorK","Filter Vendor");
-            [fRayon,fVendorK].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
-
-            [fRayon,fVendorK].forEach(el=>{
+            // Filter inputs for stock (vendor, tanggal)
+            const fVendor = createInput("fVendor","Filter Vendor");
+            const fTgl = createInput("fTgl","Filter Tgl Terima");
+            [fVendor,fTgl].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+            [fVendor,fTgl].forEach(el=>{
               el.addEventListener("input", ()=>{
-                const rv=(fRayon.value||"").toLowerCase();
-                const vv=(fVendorK.value||"").toLowerCase();
-                const filtered = filteredKurang.filter(r=>{
-                  const rayon=(r[3]||"").toLowerCase();
-                  const vendor=(r[4]||"").toLowerCase();
-                  if (rv && !rayon.includes(rv)) return false;
-                  if (vv && !vendor.includes(vv)) return false;
+                const v=(fVendor.value||"").toLowerCase();
+                const t=(fTgl.value||"").toLowerCase();
+                const filtered = filteredStock.filter(r=>{
+                  const vendor=(r[1]||"").toLowerCase();
+                  const tgl=(r[7]||"").toLowerCase();
+                  if (v && !vendor.includes(v)) return false;
+                  if (t && !tgl.includes(t)) return false;
                   return true;
                 });
-                renderKurang(filtered);
+                renderStock(filtered);
               });
             });
+          }
 
+          // if no stock found -> fallback to DETAIL MATERIAL KURANG
+          if (filteredStock.length === 0) {
+            const rangeKurang = "DETAIL MATERIAL KURANG!B2:L";
+            const urlKurang = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${rangeKurang}?key=${CONFIG.API_KEY}`;
+            const resKurang = await fetch(urlKurang);
+            const dataKurang = await resKurang.json();
+            const rowsKurang = dataKurang.values || [];
+
+            const filteredKurang = rowsKurang.filter(r => (r[7]||"").trim() === (kodeMaterial||"").trim());
+
+            thead.innerHTML = `
+              <th>No</th><th>No. SPK</th><th>Nama Pelanggan</th><th>Alamat</th>
+              <th>Rayon</th><th>Vendor</th><th>Tarif</th><th>Tanggal</th><th>Jumlah</th>
+            `;
             if (filteredKurang.length === 0) {
-              tbody.innerHTML = `<tr><td colspan="9" style="color:red;">⚠️ Tidak ada data ditemukan untuk kode ${kodeMaterial}</td></tr>`;
+              emptyMsg.style.display = "block";
+              emptyMsg.textContent = `⚠️ Tidak ada data di DETAIL MATERIAL KURANG juga untuk kode ${kodeMaterial}.`;
+            } else {
+              function renderKurang(list){
+                tbody.innerHTML=""; let no=1;
+                list.forEach(r=>{
+                  const tr=document.createElement("tr");
+                  tr.innerHTML = `
+                    <td>${no++}</td>
+                    <td>${r[0]||''}</td>
+                    <td>${r[1]||''}</td>
+                    <td>${r[2]||''}</td>
+                    <td>${r[3]||''}</td>
+                    <td>${r[4]||''}</td>
+                    <td>${r[5]||''}</td>
+                    <td>${r[9]||''}</td>
+                    <td>${r[10]||''}</td>
+                  `;
+                  tbody.appendChild(tr);
+                });
+              }
+              renderKurang(filteredKurang);
+
+              // provide filters for rayon/vendor for this fallback view
+              const fRayon = createInput("fRayon","Filter Rayon");
+              const fVendorK = createInput("fVendorK","Filter Vendor");
+              [fRayon,fVendorK].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+
+              [fRayon,fVendorK].forEach(el=>{
+                el.addEventListener("input", ()=>{
+                  const rv=(fRayon.value||"").toLowerCase();
+                  const vv=(fVendorK.value||"").toLowerCase();
+                  const filtered = filteredKurang.filter(r=>{
+                    const rayon=(r[3]||"").toLowerCase();
+                    const vendor=(r[4]||"").toLowerCase();
+                    if (rv && !rayon.includes(rv)) return false;
+                    if (vv && !vendor.includes(vv)) return false;
+                    return true;
+                  });
+                  renderKurang(filtered);
+                });
+              });
             }
           }
+
+          return; // selesai mode material/kode
         }
 
+        // Jika tidak ada parameter yang dikenali
+        emptyMsg.style.display = "block";
+        emptyMsg.textContent = "⚠️ Tidak ada parameter yang diberikan. Kunjungi dashboard terlebih dahulu.";
       } catch (err) {
         console.error("Error loadDetail:", err);
         document.querySelector("#detailTable tbody").innerHTML =
