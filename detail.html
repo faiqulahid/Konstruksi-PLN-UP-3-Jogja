@@ -69,72 +69,76 @@
         tbody.innerHTML = ""; thead.innerHTML = ""; filterContainer.innerHTML = "";
 
         // ---------- DAFTAR TUNGGU ----------
-        if (kategori) {
-          judul.textContent = kategori;
-          sub.textContent = "Daftar Pelanggan";
-          const range = "DAFTAR TUNGGU!A2:L3145";
-          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          const values = data.values || [];
+      // ---------- DAFTAR TUNGGU ----------
+const filterKey = ulpParam || kategori; // support both ?ulp=... dan ?kategori=...
+if (filterKey) {
+  judul.textContent = filterKey;
+  sub.textContent = "Daftar Pelanggan";
+  const range = "DAFTAR TUNGGU!A2:L3145";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const values = data.values || [];
 
-          thead.innerHTML = `
-            <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-            <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
-          `;
+  thead.innerHTML = `
+    <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
+    <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
+  `;
 
-          const rows = values.filter(r => r[11] === kategori);
+  // filter berdasarkan ULP di kolom C => index 2
+  const rows = values.filter(r => (r[2]||"").trim() === (filterKey||"").trim());
 
-          // buat filter inputs (multi)
-          const fULP = createInput("fULP","Filter ULP");
-          const fBulan = createInput("fBulan","Filter Bulan");
-          const fPrior = createSelect("fPrior",[ {value:"",label:"Semua Prioritas"},{value:"1",label:"1"},{value:"2",label:"2"},{value:"3",label:"3"},{value:"eskalasi",label:"Eskalasi"} ]);
-          const fTarif = createInput("fTarif","Filter Tarif");
-          [fULP,fBulan,fPrior,fTarif].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+  // buat filter inputs (multi)
+  const fULP = createInput("fULP","Filter ULP");
+  const fBulan = createInput("fBulan","Filter Bulan");
+  const fPrior = createSelect("fPrior",[ {value:"",label:"Semua Prioritas"},{value:"1",label:"1"},{value:"2",label:"2"},{value:"3",label:"3"},{value:"eskalasi",label:"Eskalasi"} ]);
+  const fTarif = createInput("fTarif","Filter Tarif");
+  [fULP,fBulan,fPrior,fTarif].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
 
-          function renderDaftar(filtered){
-            tbody.innerHTML = ""; let no=1;
-            filtered.forEach(r=>{
-              const tr=document.createElement("tr");
-              tr.innerHTML = `
-                <td>${no++}</td>
-                <td>${r[2]||''}</td>
-                <td>${r[3]||''}</td>
-                <td>${r[4]||''}</td>
-                <td>${r[6]||''}</td>
-                <td>${r[7]||''}</td>
-                <td>${r[8]||''}</td>
-                <td>${r[9]||''}</td>
-              `;
-              tbody.appendChild(tr);
-            });
-          }
+  function renderDaftar(filtered){
+    tbody.innerHTML = ""; let no=1;
+    filtered.forEach(r=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML = `
+        <td>${no++}</td>
+        <td>${r[2]||''}</td>
+        <td>${r[3]||''}</td>
+        <td>${r[4]||''}</td>
+        <td>${r[6]||''}</td>
+        <td>${r[7]||''}</td>
+        <td>${r[8]||''}</td>
+        <td>${r[9]||''}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
 
-          // initial render
-          renderDaftar(rows);
+  // initial render
+  renderDaftar(rows);
 
-          // listeners for multi-filter (AND)
-          [fULP,fBulan,fPrior,fTarif].forEach(el=>{
-            el.addEventListener("input", ()=>{
-              const ulpVal=(fULP.value||"").toLowerCase();
-              const bulanVal=(fBulan.value||"").toLowerCase();
-              const priorVal=(fPrior.value||"").toLowerCase();
-              const tarifVal=(fTarif.value||"").toLowerCase();
-              const filtered = rows.filter(r=>{
-                const ulp=(r[2]||"").toLowerCase();
-                const bulan=(r[3]||"").toLowerCase();
-                const prior=(r[4]||"").toLowerCase();
-                const tarif=(r[6]||"").toLowerCase();
-                if (ulpVal && !ulp.includes(ulpVal)) return false;
-                if (bulanVal && !bulan.includes(bulanVal)) return false;
-                if (tarifVal && !tarif.includes(tarifVal)) return false;
-                if (priorVal && !prior.startsWith(priorVal)) return false; // exact-ish for numbers
-                return true;
-              });
-              renderDaftar(filtered);
-            });
-          });
-        }
+  // listeners for multi-filter (AND)
+  [fULP,fBulan,fPrior,fTarif].forEach(el=>{
+    el.addEventListener("input", ()=>{
+      const ulpVal=(fULP.value||"").toLowerCase();
+      const bulanVal=(fBulan.value||"").toLowerCase();
+      const priorVal=(fPrior.value||"").toLowerCase();
+      const tarifVal=(fTarif.value||"").toLowerCase();
+      const filtered = rows.filter(r=>{
+        const ulp=(r[2]||"").toLowerCase();
+        const bulan=(r[3]||"").toLowerCase();
+        const prior=(r[4]||"").toLowerCase();
+        const tarif=(r[6]||"").toLowerCase();
+        if (ulpVal && !ulp.includes(ulpVal)) return false;
+        if (bulanVal && !bulan.includes(bulanVal)) return false;
+        if (tarifVal && !tarif.includes(tarifVal)) return false;
+        if (priorVal && !prior.startsWith(priorVal)) return false; // exact-ish for numbers
+        return true;
+      });
+      renderDaftar(filtered);
+    });
+  });
+}
+
 
         // ---------- STOCK MATERIAL (detail by kode) ----------
         if (material && kodeMaterial) {
