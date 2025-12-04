@@ -77,82 +77,139 @@
         // determine filter key (ulp has priority)
         const filterKey = (ulpParam && ulpParam.trim() !== "") ? ulpParam.trim() : (kategori || "").trim();
 
-        // ---------- DAFTAR TUNGGU (filter by ULP/kategori) ----------
-        if (filterKey) {
-          judul.textContent = filterKey;
-          sub.textContent = "Daftar Pelanggan";
-          const range = "DAFTAR TUNGGU!A2:L3145";
-          const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
-          const res = await fetch(url);
-          const data = await res.json();
-          const values = data.values || [];
-          const rows = values; // already starting A2
+       // ---------- DAFTAR TUNGGU (filter by ULP/kategori) ----------
+if (filterKey) {
+  judul.textContent = filterKey;
+  sub.textContent = "Daftar Pelanggan";
+  const range = "DAFTAR TUNGGU!A2:L3145";
+  const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+  const values = data.values || [];
+  const rows = values; // A2 sudah menjadi row[0]
 
-          thead.innerHTML = `
-            <th>No</th><th>ULP</th><th>Bulan</th><th>Prioritas</th>
-            <th>Tarif</th><th>Daya Lama</th><th>Daya Baru</th><th>Jumlah</th>
-          `;
+  // ============================
+  // TABEL HEADER BARU (tanpa ULP)
+  // ============================
+  thead.innerHTML = `
+    <th>No</th>
+    <th>Bulan</th>
+    <th>Prioritas</th>
+    <th>Nama Pelanggan</th>
+    <th>Tarif</th>
+    <th>Daya Lama</th>
+    <th>Daya Baru</th>
+    <th>Jumlah</th>
+    <th>Total Daya Baru</th>
+    <th>Klasifikasi</th>
+  `;
 
-          // ULP = kolom C => index 2 (A2 = row[0] => A)
-          const filteredRows = rows.filter(r => (r[2]||"").trim() === filterKey);
+  // ULP = kolom C => index 2
+  const filteredRows = rows.filter(r => (r[2] || "").trim() === filterKey);
 
-          if (filteredRows.length === 0) {
-            emptyMsg.style.display = "block";
-            emptyMsg.textContent = `⚠️ Tidak ada data Daftar Tunggu untuk '${filterKey}'.`;
-          } else {
-            function renderDaftar(filtered){
-              tbody.innerHTML = ""; let no=1;
-              filtered.forEach(r=>{
-                const tr=document.createElement("tr");
-                tr.innerHTML = `
-                  <td>${no++}</td>
-                  <td>${r[2]||''}</td>
-                  <td>${r[3]||''}</td>
-                  <td>${r[4]||''}</td>
-                  <td>${r[6]||''}</td>
-                  <td>${r[7]||''}</td>
-                  <td>${r[8]||''}</td>
-                  <td>${r[9]||''}</td>
-                `;
-                tbody.appendChild(tr);
-              });
-            }
+  if (filteredRows.length === 0) {
+    emptyMsg.style.display = "block";
+    emptyMsg.textContent = `⚠️ Tidak ada data Daftar Tunggu untuk '${filterKey}'.`;
+  } else {
 
-            // initial render
-            renderDaftar(filteredRows);
+    // =============================
+    // RENDER TABEL (fungsi sama)
+    // =============================
+    function renderDaftar(filtered) {
+      tbody.innerHTML = "";
+      let no = 1;
+      filtered.forEach(r => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${no++}</td>
+          <td>${r[3] || ""}</td>
+          <td>${r[4] || ""}</td>
+          <td>${r[5] || ""}</td>
+          <td>${r[6] || ""}</td>
+          <td>${r[7] || ""}</td>
+          <td>${r[8] || ""}</td>
+          <td>${r[9] || ""}</td>
+          <td>${r[10] || ""}</td>
+          <td>${r[11] || ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
 
-            // buat filter inputs (multi)
-            const fULP = createInput("fULP","Filter ULP");
-            const fBulan = createInput("fBulan","Filter Bulan");
-            const fPrior = createSelect("fPrior",[ {value:"",label:"Semua Prioritas"},{value:"1",label:"1"},{value:"2",label:"2"},{value:"3",label:"3"},{value:"eskalasi",label:"Eskalasi"} ]);
-            const fTarif = createInput("fTarif","Filter Tarif");
-            [fULP,fBulan,fPrior,fTarif].forEach(el=>{el.style.margin="6px"; filterContainer.appendChild(el)});
+    renderDaftar(filteredRows);
 
-            // listeners for multi-filter (AND)
-            [fULP,fBulan,fPrior,fTarif].forEach(el=>{
-              el.addEventListener("input", ()=>{
-                const ulpVal=(fULP.value||"").toLowerCase();
-                const bulanVal=(fBulan.value||"").toLowerCase();
-                const priorVal=(fPrior.value||"").toLowerCase();
-                const tarifVal=(fTarif.value||"").toLowerCase();
-                const filtered = filteredRows.filter(r=>{
-                  const ulp=(r[2]||"").toLowerCase();
-                  const bulan=(r[3]||"").toLowerCase();
-                  const prior=(r[4]||"").toLowerCase();
-                  const tarif=(r[6]||"").toLowerCase();
-                  if (ulpVal && !ulp.includes(ulpVal)) return false;
-                  if (bulanVal && !bulan.includes(bulanVal)) return false;
-                  if (tarifVal && !tarif.includes(tarifVal)) return false;
-                  if (priorVal && !prior.startsWith(priorVal)) return false;
-                  return true;
-                });
-                renderDaftar(filtered);
-              });
-            });
-          }
+    // ======================================
+    // FILTER BARU — SESUAI PERMINTAAN ANDA
+    // ======================================
 
-          return; // selesai mode daftar tunggu
-        }
+    // input bulan (D)
+    const fBulan = createInput("fBulan", "Filter Bulan");
+
+    // dropdown prioritas (E)
+    const fPrior = createSelect("fPrior", [
+      { value: "", label: "Semua Prioritas" },
+      { value: "1", label: "1" },
+      { value: "2", label: "2" },
+      { value: "3", label: "3" },
+      { value: "eskalasi", label: "Eskalasi" }
+    ]);
+
+    // dropdown Tarif (G) → ambil otomatis dari data
+    const tarifUnique = [...new Set(filteredRows.map(r => r[6]).filter(Boolean))];
+    const fTarif = createSelect(
+      "fTarif",
+      [{ value: "", label: "Semua Tarif" }]
+        .concat(tarifUnique.map(t => ({ value: t, label: t })))
+    );
+
+    // dropdown Klasifikasi (L)
+    const klasUnique = [...new Set(filteredRows.map(r => r[11]).filter(Boolean))];
+    const fKlas = createSelect(
+      "fKlas",
+      [{ value: "", label: "Semua Klasifikasi" }]
+        .concat(klasUnique.map(k => ({ value: k, label: k })))
+    );
+
+    // tambahkan ke filter container
+    [fBulan, fPrior, fTarif, fKlas].forEach(el => {
+      el.style.margin = "6px";
+      filterContainer.appendChild(el);
+    });
+
+    // ===============================
+    // MULTI FILTER — AND CONDITION
+    // ===============================
+    [fBulan, fPrior, fTarif, fKlas].forEach(el => {
+      el.addEventListener("input", () => {
+
+        const bulanVal = (fBulan.value || "").toLowerCase();
+        const priorVal = (fPrior.value || "").toLowerCase();
+        const tarifVal = (fTarif.value || "").toLowerCase();
+        const klasVal = (fKlas.value || "").toLowerCase();
+
+        const filtered = filteredRows.filter(r => {
+
+          const bulan = (r[3] || "").toLowerCase();
+          const prior = (r[4] || "").toLowerCase();
+          const tarif = (r[6] || "").toLowerCase();
+          const klas = (r[11] || "").toLowerCase();
+
+          if (bulanVal && !bulan.includes(bulanVal)) return false;
+          if (priorVal && !prior.startsWith(priorVal)) return false;
+          if (tarifVal && tarif !== tarifVal) return false;
+          if (klasVal && klas !== klasVal) return false;
+
+          return true;
+        });
+
+        renderDaftar(filtered);
+      });
+    });
+  }
+
+  return; // selesai mode daftar tunggu
+}
+
 
         // ---------- STOCK MATERIAL (detail by kode) ----------
         if (material && kodeMaterial) {
