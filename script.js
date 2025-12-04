@@ -142,3 +142,27 @@ async function loadMaterialKurang() {
   };
   container.appendChild(btnKosong);
 }
+
+// Animasi auto highlight tombol menu
+function autoHighlightMenu() {
+  const buttons = document.querySelectorAll(".nav-btn");
+  let index = 0;
+
+  setInterval(() => {
+    // hapus highlight semua tombol
+    buttons.forEach(btn => btn.classList.remove("highlight"));
+
+    // beri highlight ke tombol sekarang
+    const current = buttons[index];
+    current.classList.add("highlight");
+
+    // pindah ke tombol berikutnya
+    index = (index + 1) % buttons.length;
+  }, 2000); // ganti setiap 2 detik
+}
+
+// jalankan animasi saat halaman load
+window.addEventListener("load", () => {
+  autoHighlightMenu();
+});
+
