@@ -111,25 +111,34 @@ body {
   background-color: #FFD700;
   color: #000;
 }
-/* MODE AUTO-SHOW: Card membesar + teks ikut membesar */
-.card.autoshow-zoom {
-  transform: scale(1.35);          
-  z-index: 5;
-  position: relative;
-  transition: transform 0.5s ease, opacity 0.5s ease;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+/* MODE AUTO SHOW – CARD BESAR TAPI TIDAK FULLSCREEN */
+.auto-fullscreen {
+    width: 480px !important;       /* ukurannya sedang */
+    min-height: 350px !important;  
+    padding: 20px !important;
+    margin: 40px auto !important;
+
+    display: flex;                 /* supaya konten bisa dicenter */
+    flex-direction: column;
+    justify-content: center;       /* center vertikal */
+    align-items: center;           /* center horizontal */
+
+    transform: scale(1.20);        /* sedikit membesar */
+    border-radius: 20px !important;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    text-align: center !important;
 }
 
-/* Teks saat autoshow */
-.card.autoshow-zoom h3 {
-  font-size: 28px !important;
-  font-weight: bold;
+/* JUDUL CARD SAAT AUTO SHOW */
+.auto-fullscreen h3 {
+    font-size: 2.2em !important;   /* diperbesar */
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
-.card.autoshow-zoom p {
-  font-size: 22px !important;
-}
-
-.card.autoshow-zoom b {
-  font-size: 24px !important;
+/* TEKS ANGKA / INFORMASI */
+.auto-fullscreen p {
+    font-size: 1.8em !important;   /* diperbesar */
+    font-weight: bold;
+    margin: 6px 0;
 }
