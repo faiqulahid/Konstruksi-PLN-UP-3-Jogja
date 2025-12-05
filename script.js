@@ -191,7 +191,8 @@ function autoShowDashboardOneByOne() {
         card.style.height = "85vh";
         card.style.margin = "auto";
         card.style.transition = "opacity 0.6s ease-in-out";
-
+        // TAMBAHKAN class ini
+        card.classList.add("auto-fullscreen");
         // animasi fade in
         requestAnimationFrame(() => {
           card.style.opacity = "1";
@@ -199,9 +200,17 @@ function autoShowDashboardOneByOne() {
 
         // setelah 3 detik → fade out
         setTimeout(() => {
-          card.style.opacity = "0";
-        }, 3000);
+          // hapus fullscreen sebelum pindah ke card berikutnya
+          card.classList.remove("auto-fullscreen");
 
+          cardIndex++;
+          if (cardIndex < filteredCards.length) {
+            showCard();
+          } else {
+            nextMenu();
+          }
+        }, 3600);
+        
         // setelah fade out → pindah ke card berikutnya
         setTimeout(() => {
           cardIndex++;
