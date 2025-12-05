@@ -155,36 +155,66 @@ function autoShowDashboardOneByOne() {
     const btn = buttons[menuIndex];
     btn.classList.add("highlight");
 
-    // load dashboard (summary card)
+    // load dashboard (summary)
     loadDashboard(menuType).then(() => {
       const container = document.getElementById("chartContainer");
-      const cards = container.querySelectorAll(".card");
+      const cards = Array.from(container.querySelectorAll(".card"));
+
+      // filter supaya card “material kosong” tidak ditampilkan
+      const filteredCards = cards.filter(c => {
+        const title = c.querySelector("h3")?.innerText.toLowerCase() || "";
+        return !title.includes("material kosong");
+      });
+
       cardIndex = 0;
 
       // sembunyikan semua card
-      cards.forEach(c => c.style.display = "none");
+      filteredCards.forEach(c => c.style.display = "none");
 
-      if (cards.length === 0) {
-        // jika tidak ada card, pindah ke menu berikutnya
+      if (filteredCards.length === 0) {
         setTimeout(nextMenu, 2000);
         return;
       }
 
-      // tampilkan card satu per satu
-      const cardTimer = setInterval(() => {
-        // sembunyikan card sebelumnya
-        cards.forEach(c => c.style.display = "none");
+      function showCard() {
+        // sembunyikan semua card
+        filteredCards.forEach(c => {
+          c.style.opacity = "0";
+          c.style.display = "none";
+        });
 
-        // tampilkan card sekarang
-        cards[cardIndex].style.display = "block";
+        let card = filteredCards[cardIndex];
 
-        cardIndex++;
-        if (cardIndex >= cards.length) {
-          clearInterval(cardTimer);
-          // setelah semua card selesai, pindah ke menu berikutnya setelah delay
-          setTimeout(nextMenu, 2000);
-        }
-      }, 1500); // jeda antar card 1.5 detik
+        // perbesar menjadi hampir fullscreen
+        card.style.display = "block";
+        card.style.width = "95vw";
+        card.style.height = "85vh";
+        card.style.margin = "auto";
+        card.style.transition = "opacity 0.6s ease-in-out";
+
+        // animasi fade in
+        requestAnimationFrame(() => {
+          card.style.opacity = "1";
+        });
+
+        // setelah 3 detik → fade out
+        setTimeout(() => {
+          card.style.opacity = "0";
+        }, 3000);
+
+        // setelah fade out → pindah ke card berikutnya
+        setTimeout(() => {
+          cardIndex++;
+          if (cardIndex < filteredCards.length) {
+            showCard();
+          } else {
+            // selesai, ganti menu
+            nextMenu();
+          }
+        }, 3600);
+      }
+
+      showCard();
     });
   }
 
@@ -193,12 +223,8 @@ function autoShowDashboardOneByOne() {
     showMenu(menuTypes[menuIndex]);
   }
 
-  // mulai dari menu pertama
+  // mulai
   showMenu(menuTypes[menuIndex]);
 }
 
-// jalankan saat halaman load
-window.addEventListener("load", () => {
-  autoShowDashboardOneByOne();
-});
-
+window.addEventListener("load", autoShowDashboardOneByOne);
