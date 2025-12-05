@@ -111,53 +111,25 @@ body {
   background-color: #FFD700;
   color: #000;
 }
-/* ===========================================
-   MODE FULLSCREEN AUTOSHOW (CHART BESAR)
-   =========================================== */
-.auto-fullscreen {
-  position: fixed !important;
-  top: 0;
-  left: 0;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: white !important;
-  z-index: 9999 !important;
-  display: flex !important;
-  justify-content: center;
-  align-items: center;
-  padding: 40px !important;
+/* MODE AUTO-SHOW: Card membesar + teks ikut membesar */
+.card.autoshow-zoom {
+  transform: scale(1.35);          
+  z-index: 5;
+  position: relative;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
 }
 
-/* Perbesar card di mode autoplay */
-.auto-fullscreen .card {
-  width: 90% !important;
-  max-width: 1400px !important;
-  height: auto !important;
-  padding: 50px !important;
-  border-radius: 20px !important;
-}
-
-/* Perbesar teks hanya saat fullscreen autoplay */
-.auto-fullscreen h3 {
-  font-size: 42px !important;
+/* Teks saat autoshow */
+.card.autoshow-zoom h3 {
+  font-size: 28px !important;
   font-weight: bold;
 }
 
-.auto-fullscreen p {
-  font-size: 30px !important;
+.card.autoshow-zoom p {
+  font-size: 22px !important;
 }
 
-.auto-fullscreen b {
-  font-size: 34px !important;
-}
-
-/* Layout khusus saat autoshow */
-.auto-fullscreen .card-container {
-  grid-template-columns: 1fr !important;
-  padding: 0 !important;
-}
-
-/* 🟡 Sembunyikan card “lihat material kosong” HANYA saat autoshow */
-.auto-fullscreen .card[data-type="lihat_material_kosong"] {
-  display: none !important;
+.card.autoshow-zoom b {
+  font-size: 24px !important;
 }
