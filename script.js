@@ -150,26 +150,26 @@ function autoShowDashboardOneByOne() {
   let cardIndex = 0;
 
   function showMenu(menuType) {
-    // highlight tombol menu aktif
-    buttons.forEach(btn => btn.classList.remove("highlight"));
-    const btn = buttons[menuIndex];
-    btn.classList.add("highlight");
 
-    // load dashboard (summary)
+    buttons.forEach(btn => btn.classList.remove("highlight"));
+    buttons[menuIndex].classList.add("highlight");
+
     loadDashboard(menuType).then(() => {
+
       const container = document.getElementById("chartContainer");
       const cards = Array.from(container.querySelectorAll(".card"));
 
-      // filter supaya card “material kosong” tidak ditampilkan
+      // Hilangkan card “lihat material kosong” hanya saat autoshow
       const filteredCards = cards.filter(c => {
         const title = c.querySelector("h3")?.innerText.toLowerCase() || "";
         return !title.includes("material kosong");
       });
 
       cardIndex = 0;
-
-      // sembunyikan semua card
-      filteredCards.forEach(c => c.style.display = "none");
+      filteredCards.forEach(c => {
+        c.style.display = "none";
+        c.classList.remove("autoshow-zoom");
+      });
 
       if (filteredCards.length === 0) {
         setTimeout(nextMenu, 2000);
@@ -177,50 +177,39 @@ function autoShowDashboardOneByOne() {
       }
 
       function showCard() {
-        // sembunyikan semua card
+
         filteredCards.forEach(c => {
-          c.style.opacity = "0";
           c.style.display = "none";
+          c.classList.remove("autoshow-zoom");
         });
 
-        let card = filteredCards[cardIndex];
-
-        // perbesar menjadi hampir fullscreen
+        const card = filteredCards[cardIndex];
         card.style.display = "block";
-        card.style.width = "95vw";
-        card.style.height = "85vh";
-        card.style.margin = "auto";
-        card.style.transition = "opacity 0.6s ease-in-out";
-        // TAMBAHKAN class ini
-        card.classList.add("auto-fullscreen");
-        // animasi fade in
+        card.style.opacity = "0";
+
+        // class zoom (bukan fullscreen)
+        card.classList.add("autoshow-zoom");
+
+        // fade in
         requestAnimationFrame(() => {
           card.style.opacity = "1";
         });
 
-        // setelah 3 detik → fade out
+        // setelah 3.6 detik → pindah card
         setTimeout(() => {
-          // hapus fullscreen sebelum pindah ke card berikutnya
-          card.classList.remove("auto-fullscreen");
+          card.classList.remove("autoshow-zoom");
+          card.style.opacity = "0";
 
           cardIndex++;
+
           if (cardIndex < filteredCards.length) {
             showCard();
           } else {
             nextMenu();
           }
+
         }, 3600);
-        
-        // setelah fade out → pindah ke card berikutnya
-        setTimeout(() => {
-          cardIndex++;
-          if (cardIndex < filteredCards.length) {
-            showCard();
-          } else {
-            // selesai, ganti menu
-            nextMenu();
-          }
-        }, 3600);
+
       }
 
       showCard();
@@ -232,7 +221,6 @@ function autoShowDashboardOneByOne() {
     showMenu(menuTypes[menuIndex]);
   }
 
-  // mulai
   showMenu(menuTypes[menuIndex]);
 }
 
