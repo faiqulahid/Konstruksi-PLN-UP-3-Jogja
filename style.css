@@ -104,7 +104,7 @@ body {
   margin: 20px auto !important;
   width: 85% !important;
   min-height: 300px;
-  background: #00E8D6 !important;
+  background: white !important;
   border-radius: 20px;
   padding: 40px 20px;
   transform: scale(1.05);
@@ -116,13 +116,13 @@ body {
 
 /* Judul & isi card autoshow diperbesar */
 .autoshow-zoom h3 {
-  font-size: 3em !important;
+  font-size: 5em !important;
   font-weight: bold;
   margin-bottom: 15px;
 }
 
 .autoshow-zoom p {
-  font-size: 2.2em !important;
+  font-size: 5em !important;
   font-weight: bold;
 }
 
