@@ -1,3 +1,6 @@
+/* =========================================================
+   GLOBAL STYLE
+   ========================================================= */
 body {
   font-family: Arial, sans-serif;
   background: #f8f9fa;
@@ -5,6 +8,9 @@ body {
   padding: 0;
 }
 
+/* =========================================================
+   HEADER
+   ========================================================= */
 .header {
   text-align: center;
   background-color: #007AC3;
@@ -14,6 +20,9 @@ body {
   margin-bottom: 30px;
 }
 
+/* =========================================================
+   MENU BUTTONS
+   ========================================================= */
 .menu {
   display: flex;
   justify-content: center;
@@ -29,13 +38,32 @@ body {
   border-radius: 8px;
   font-size: 16px;
   cursor: pointer;
-  transition: 0.3s;
+  font-weight: bold;
+  transition: all 0.3s ease;
 }
 
 .nav-btn:hover {
   background: #005b91;
 }
 
+/* Highlight untuk autoshow */
+@keyframes pulseMove {
+  0%   { transform: translateY(0) scale(1);   box-shadow: 0 0 5px #FFD700; }
+  25%  { transform: translateY(-5px) scale(1.05); box-shadow: 0 0 15px #FFD700; }
+  50%  { transform: translateY(0) scale(1.1); box-shadow: 0 0 25px #FFD700; }
+  75%  { transform: translateY(-3px) scale(1.05); box-shadow: 0 0 15px #FFD700; }
+  100% { transform: translateY(0) scale(1);   box-shadow: 0 0 5px #FFD700; }
+}
+
+.nav-btn.highlight {
+  animation: pulseMove 1.5s infinite;
+  background-color: #FFD700;
+  color: #000;
+}
+
+/* =========================================================
+   CARD GRID (NORMAL MODE)
+   ========================================================= */
 .card-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -67,94 +95,47 @@ body {
   font-size: 16px;
 }
 
-/* Tombol menu */
-.nav-btn {
-  transition: all 0.3s ease;
+/* =========================================================
+   AUTOSHOW MODE — FULLSCREEN STYLE
+   (SESUAI GAMBAR YANG KAMU KIRIM)
+   ========================================================= */
+.autoshow-zoom {
   position: relative;
-  background-color: #007AC3;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  padding: 10px 18px;
-  margin: 0 6px;
-  cursor: pointer;
+  margin: 20px auto !important;
+  width: 85% !important;
+  min-height: 300px;
+  background: #00E8D6 !important;
+  border-radius: 20px;
+  padding: 40px 20px;
+  transform: scale(1.05);
+  transition: all 0.4s ease;
+  text-align: center !important;
+  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
+  z-index: 999;
+}
+
+/* Judul & isi card autoshow diperbesar */
+.autoshow-zoom h3 {
+  font-size: 3em !important;
+  font-weight: bold;
+  margin-bottom: 15px;
+}
+
+.autoshow-zoom p {
+  font-size: 2.2em !important;
   font-weight: bold;
 }
 
-/* Animasi pulse + naik-turun + shadow */
-@keyframes pulseMove {
-  0% {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 0 5px #FFD700;
-  }
-  25% {
-    transform: translateY(-5px) scale(1.05);
-    box-shadow: 0 0 15px #FFD700;
-  }
-  50% {
-    transform: translateY(0) scale(1.1);
-    box-shadow: 0 0 25px #FFD700;
-  }
-  75% {
-    transform: translateY(-3px) scale(1.05);
-    box-shadow: 0 0 15px #FFD700;
-  }
-  100% {
-    transform: translateY(0) scale(1);
-    box-shadow: 0 0 5px #FFD700;
-  }
+/* =========================================================
+   AGAR card autoshow benar-benar di tengah
+   ========================================================= */
+#chartContainer .card {
+  display: block;
 }
 
-/* Kelas untuk tombol yang sedang di-highlight */
-.nav-btn.highlight {
-  animation: pulseMove 1.5s infinite;
-  background-color: #FFD700;
-  color: #000;
-}
-/* ================================
-   MODE AUTO DASHBOARD (LAYOUT LIKE YOUR IMAGE)
-   ================================ */
-.auto-fullscreen {
-    width: 85%;
-    min-height: 300px;
-    margin: 30px auto;
-    background: #00AEEF !important;
-    border-radius: 20px;
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-    transform: scale(1.05);
-    text-align: center !important;
-}
-
-.auto-fullscreen h3 {
-    font-size: 2.8em !important;
-    font-weight: bold;
-    color: black;
-    margin-bottom: 10px;
-}
-
-.auto-fullscreen p {
-    font-size: 2.2em !important;
-    font-weight: bold;
-    color: black;
-    margin: 5px 0;
-}
-/* Mode autoshow: perbesar card agar lebih jelas */
-.autoshow-zoom {
-  transform: scale(1.3);
-  transition: transform 0.4s ease, opacity 0.4s ease;
-  z-index: 999;
-  box-shadow: 0 8px 25px rgba(0,0,0,0.25);
-  border-radius: 16px;
-}
-
-/* Pastikan card autoshow tetap center dan lebih lebar */
 #chartContainer .card.autoshow-zoom {
-  margin: 0 auto;
-  width: 80%;
+  display: flex !important;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
 }
-
