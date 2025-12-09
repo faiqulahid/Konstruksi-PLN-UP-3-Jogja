@@ -115,13 +115,13 @@ body {
 
 /* Text autoshow diperbesar */
 .autoshow-zoom h3 {
-  font-size: 5em !important;
+  font-size: 4em !important;
   font-weight: bold;
   margin-bottom: 15px;
 }
 
 .autoshow-zoom p {
-  font-size: 5em !important;
+  font-size: 4em !important;
   font-weight: bold;
 }
 
