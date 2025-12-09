@@ -346,24 +346,27 @@ if (filterKey) {
             emptyMsg.style.display = "block";
             emptyMsg.textContent = `⚠️ Tidak ada data stock untuk kode ${kodeMaterial}. Mencari di DETAIL MATERIAL KURANG...`;
           } else {
-            function renderStock(list){
-              tbody.innerHTML=""; let no=1;
-              list.forEach(r=>{
-                const tr=document.createElement("tr");
-                tr.innerHTML = `
-                  <td>${no++}</td>
-                  <td>${r[0]||''}</td>
-                  <td>${r[1]||''}</td>
-                  <td>${r[2]||''}</td>
-                  <td>${r[3]||''}</td>
-                  <td>${r[5]||''}</td>
-                  <td>${r[6]||''}</td>
-                  <td>${r[7]||''}</td>
-                  <td>${r[15]||''}</td>
-                `;
-                tbody.appendChild(tr);
-              });
-            }
+          function renderStock(list){
+          tbody.innerHTML=""; 
+          let no=1;
+        
+          list.forEach(r=>{
+            const tr=document.createElement("tr");
+            tr.innerHTML = `
+              <td>${no++}</td>
+              <td>${r[0]||''}</td>  <!-- Nomor SPB -->
+              <td>${r[1]||''}</td>  <!-- Vendor -->
+              <td>${r[2]||''}</td>  <!-- Awal -->
+              <td>${r[3]||''}</td>  <!-- Akhir -->
+              <td>${r[7]||''}</td>  <!-- Jumlah SPB -->
+              <td>${r[8]||''}</td>  <!-- Jumlah Diterima -->
+              <td>${r[9]||''}</td>  <!-- Tgl Terima -->
+              <td>${r[15]||''}</td> <!-- Nilai SPB -->
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+
             renderStock(filteredStock);
 
             // Filter inputs for stock (vendor, tanggal)
@@ -376,7 +379,7 @@ if (filterKey) {
                 const t=(fTgl.value||"").toLowerCase();
                 const filtered = filteredStock.filter(r=>{
                   const vendor=(r[1]||"").toLowerCase();
-                  const tgl=(r[7]||"").toLowerCase();
+                  const tgl=(r[9]||"").toLowerCase();
                   if (v && !vendor.includes(v)) return false;
                   if (t && !tgl.includes(t)) return false;
                   return true;
