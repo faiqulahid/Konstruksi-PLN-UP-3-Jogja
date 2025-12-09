@@ -16,8 +16,7 @@ async function loadDaftarTunggu() {
   const values = data.values || [];
   const rows = values.slice(1);
 
-  // ULP berada di kolom C → index 2
-  const kategoriCol = 2;
+  const kategoriCol = 2; // kolom ULP
   const kategoriCount = {};
 
   rows.forEach(r => {
@@ -43,9 +42,9 @@ async function loadDaftarTunggu() {
 }
 
 
-// ===================== STOCK MATERIAL (FIXED) =====================
+// ===================== STOCK MATERIAL =====================
 async function loadStockMaterial() {
-  const range = "STOCK MATERIAL!A2:F";   // ambil sampai kolom F
+  const range = "STOCK MATERIAL!A2:F";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
@@ -56,10 +55,10 @@ async function loadStockMaterial() {
   const kosongList = [];
 
   values.forEach(row => {
-    const nama = row[0];    // A
-    const kode = row[3];    // D
-    const stok = row[4];    // E
-    const belum = row[5];   // F
+    const nama = row[0];
+    const kode = row[3];
+    const stok = row[4];
+    const belum = row[5];
 
     if (!nama || !kode) return;
 
@@ -75,8 +74,12 @@ async function loadStockMaterial() {
       card.innerHTML = `
         <h3>${nama}</h3>
         <p><b>Kode Material: ${kode}</b></p>
-        <p style="color:green; font-size:1.1em; font-weight:bold; margin:6px 0;">Stok: ${hasStok ? stokVal : 0}</p>
-        <p style="color:red; font-size:1.1em; font-weight:bold; margin:6px 0;">Belum Datang: ${hasBelum ? belumVal : 0}</p>
+        <p style="color:green; font-size:1.1em; font-weight:bold; margin:6px 0;">
+          Stok: ${hasStok ? stokVal : 0}
+        </p>
+        <p style="color:red; font-size:1.1em; font-weight:bold; margin:6px 0;">
+          Belum Datang: ${hasBelum ? belumVal : 0}
+        </p>
       `;
       card.onclick = () => {
         window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
@@ -96,6 +99,8 @@ async function loadStockMaterial() {
   };
   container.appendChild(btnKosong);
 }
+
+
 // ===================== MATERIAL KURANG =====================
 async function loadMaterialKurang() {
   const range = "MATERIAL KURANG!A2:C";
@@ -114,7 +119,6 @@ async function loadMaterialKurang() {
 
     const jumlahVal = Number(jumlah);
 
-    // tampilkan hanya jika jumlah > 0 (butuh material)
     if (!isNaN(jumlahVal) && jumlahVal > 0) {
       const card = document.createElement("div");
       card.className = "card";
@@ -123,7 +127,6 @@ async function loadMaterialKurang() {
         <p><b>Kode: ${kode}</b></p>
         <p style="color:red; font-size:1.2em; font-weight:bold; margin:6px 0;">${jumlahVal}</p>
       `;
-      // penting: arahkan ke detail dengan material & kode
       card.onclick = () => {
         window.location.href = `detail.html?material=${encodeURIComponent(nama)}&kode=${encodeURIComponent(kode)}`;
       };
@@ -143,6 +146,11 @@ async function loadMaterialKurang() {
   container.appendChild(btnKosong);
 }
 
+
+
+// =================================================================
+//                     AUTOSHOW SLIDESHOW SYSTEM
+// =================================================================
 function autoShowDashboardOneByOne() {
   const menuTypes = ['daftarTunggu', 'stockMaterial', 'materialKurang'];
   const buttons = document.querySelectorAll(".nav-btn");
@@ -150,40 +158,29 @@ function autoShowDashboardOneByOne() {
   let menuIndex = 0;
   let cardIndex = 0;
 
-  let autoShowActive = true;          // autoshow ON saat load
-  let idleTimer = null;               // timer restart autoshow
-  let idleTimeout = 180000;           // 3 menit (ubah jika perlu)
+  let autoShowActive = true;
+  let idleTimer = null;
+  let idleTimeout = 180000;
 
-  // ---------------------------
-  //  IDLE RESTART FUNCTION
-  // ---------------------------
   function resetIdleTimer() {
     clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
-      autoShowActive = true;          // autoshow hidup lagi
-      menuIndex = 0;                  // mulai dari awal
+      autoShowActive = true;
+      menuIndex = 0;
       showMenu(menuTypes[menuIndex]);
     }, idleTimeout);
   }
 
-  // ---------------------------
-  //  STOP AUTOSHOW SAAT USER INTERAKSI
-  // ---------------------------
   ["click", "mousemove", "keydown", "scroll"].forEach(evt => {
     window.addEventListener(evt, () => {
-      if (!autoShowActive) {
-        resetIdleTimer();             // restart hitung idle
-      }
+      if (!autoShowActive) resetIdleTimer();
     });
   });
 
-  // ---------------------------
-  //  KLIK MENU = AUTOSHOW BERHENTI TOTAL
-  // ---------------------------
   buttons.forEach((btn, index) => {
     btn.addEventListener("click", () => {
-      autoShowActive = false;          // stop autoshow
-      resetIdleTimer();                // mulai hitung idle
+      autoShowActive = false;
+      resetIdleTimer();
       menuIndex = index;
 
       buttons.forEach(b => b.classList.remove("highlight"));
@@ -191,12 +188,9 @@ function autoShowDashboardOneByOne() {
     });
   });
 
-  // ---------------------------
-  //  FUNGSI TAMPILKAN MENU
-  // ---------------------------
   function showMenu(menuType) {
 
-    if (!autoShowActive) return;   // kalau autoshow mati, jangan tampilkan
+    if (!autoShowActive) return;
 
     buttons.forEach(btn => btn.classList.remove("highlight"));
     buttons[menuIndex].classList.add("highlight");
@@ -206,13 +200,13 @@ function autoShowDashboardOneByOne() {
       const container = document.getElementById("chartContainer");
       const cards = Array.from(container.querySelectorAll(".card"));
 
-      // Hilangkan card “material kosong” dari autoshow
       const filteredCards = cards.filter(c => {
         const title = c.querySelector("h3")?.innerText.toLowerCase() || "";
         return !title.includes("material kosong");
       });
 
       cardIndex = 0;
+
       filteredCards.forEach(c => {
         c.style.display = "none";
         c.classList.remove("autoshow-zoom");
@@ -223,12 +217,9 @@ function autoShowDashboardOneByOne() {
         return;
       }
 
-      // ---------------------------
-      //  SHOW CARD AUTOMATIS
-      // ---------------------------
       function showCard() {
 
-        if (!autoShowActive) return;   // jika autoshow dimatikan user
+        if (!autoShowActive) return;
 
         filteredCards.forEach(c => {
           c.style.display = "none";
@@ -247,7 +238,7 @@ function autoShowDashboardOneByOne() {
 
         setTimeout(() => {
 
-          if (!autoShowActive) return;   // cek lagi
+          if (!autoShowActive) return;
 
           card.classList.remove("autoshow-zoom");
           card.style.opacity = "0";
@@ -268,20 +259,13 @@ function autoShowDashboardOneByOne() {
     });
   }
 
-  // ---------------------------
-  //  PINDAH MENU
-  // ---------------------------
   function nextMenu() {
-    if (!autoShowActive) return;  // autoshow berhenti total
+    if (!autoShowActive) return;
     menuIndex = (menuIndex + 1) % menuTypes.length;
     showMenu(menuTypes[menuIndex]);
   }
 
-  // ---------------------------
-  //  JALANKAN AUTOSHOW PERTAMA KALI
-  // ---------------------------
   showMenu(menuTypes[menuIndex]);
 }
 
 window.addEventListener("load", autoShowDashboardOneByOne);
-
