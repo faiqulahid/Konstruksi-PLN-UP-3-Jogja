@@ -43,9 +43,9 @@ async function loadDaftarTunggu() {
 }
 
 
-// ===================== STOCK MATERIAL =====================
+// ===================== STOCK MATERIAL (FIXED) =====================
 async function loadStockMaterial() {
-  const range = "STOCK MATERIAL!A2:F";
+  const range = "STOCK MATERIAL!A2:F";   // ambil sampai kolom F
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
@@ -56,13 +56,16 @@ async function loadStockMaterial() {
   const kosongList = [];
 
   values.forEach(row => {
-    const [nama, kode, stok, belum] = row;
+    const nama = row[0];    // A
+    const kode = row[3];    // D
+    const stok = row[4];    // E
+    const belum = row[5];   // F
+
     if (!nama || !kode) return;
 
     const stokVal = Number(stok);
     const belumVal = Number(belum);
 
-    // validasi: hanya tampilkan jika stok atau belum (arriving) ada > 0
     const hasStok = !isNaN(stokVal) && stokVal > 0;
     const hasBelum = !isNaN(belumVal) && belumVal > 0;
 
@@ -80,12 +83,10 @@ async function loadStockMaterial() {
       };
       container.appendChild(card);
     } else {
-      // stok/jumlah tidak valid atau = 0 -> dianggap kosong
       kosongList.push({ nama, kode });
     }
   });
 
-  // Tombol lihat material kosong + indikator jumlah
   const btnKosong = document.createElement("button");
   btnKosong.textContent = `🔍 Lihat Material Kosong (${kosongList.length})`;
   btnKosong.style = "margin-top:20px; padding:10px 20px; display:block; margin:auto;";
@@ -95,7 +96,6 @@ async function loadStockMaterial() {
   };
   container.appendChild(btnKosong);
 }
-
 // ===================== MATERIAL KURANG =====================
 async function loadMaterialKurang() {
   const range = "MATERIAL KURANG!A2:C";
