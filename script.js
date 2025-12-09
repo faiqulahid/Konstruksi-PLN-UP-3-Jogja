@@ -45,7 +45,7 @@ async function loadDaftarTunggu() {
 
 // ===================== STOCK MATERIAL =====================
 async function loadStockMaterial() {
-  const range = "STOCK MATERIAL!A2:D";
+  const range = "STOCK MATERIAL!A2:F";
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${CONFIG.SHEET_ID}/values/${range}?key=${CONFIG.API_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
