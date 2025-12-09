@@ -196,9 +196,16 @@ function autoShowDashboardOneByOne() {
     buttons[menuIndex].classList.add("highlight");
 
     loadDashboard(menuType).then(() => {
-
+    
+      // ============================================
+      // HILANGKAN TOMBOL LIHAT MATERIAL KOSONG
+      // ============================================
+      const emptyBtn = document.querySelector("#chartContainer button");
+      if (emptyBtn) emptyBtn.style.display = "none";
+    
       const container = document.getElementById("chartContainer");
       const cards = Array.from(container.querySelectorAll(".card"));
+
 
       const filteredCards = cards.filter(c => {
         const title = c.querySelector("h3")?.innerText.toLowerCase() || "";
