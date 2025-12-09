@@ -146,10 +146,57 @@ async function loadMaterialKurang() {
 function autoShowDashboardOneByOne() {
   const menuTypes = ['daftarTunggu', 'stockMaterial', 'materialKurang'];
   const buttons = document.querySelectorAll(".nav-btn");
+
   let menuIndex = 0;
   let cardIndex = 0;
 
+  let autoShowActive = true;          // autoshow ON saat load
+  let idleTimer = null;               // timer restart autoshow
+  let idleTimeout = 180000;           // 3 menit (ubah jika perlu)
+
+  // ---------------------------
+  //  IDLE RESTART FUNCTION
+  // ---------------------------
+  function resetIdleTimer() {
+    clearTimeout(idleTimer);
+    idleTimer = setTimeout(() => {
+      autoShowActive = true;          // autoshow hidup lagi
+      menuIndex = 0;                  // mulai dari awal
+      showMenu(menuTypes[menuIndex]);
+    }, idleTimeout);
+  }
+
+  // ---------------------------
+  //  STOP AUTOSHOW SAAT USER INTERAKSI
+  // ---------------------------
+  ["click", "mousemove", "keydown", "scroll"].forEach(evt => {
+    window.addEventListener(evt, () => {
+      if (!autoShowActive) {
+        resetIdleTimer();             // restart hitung idle
+      }
+    });
+  });
+
+  // ---------------------------
+  //  KLIK MENU = AUTOSHOW BERHENTI TOTAL
+  // ---------------------------
+  buttons.forEach((btn, index) => {
+    btn.addEventListener("click", () => {
+      autoShowActive = false;          // stop autoshow
+      resetIdleTimer();                // mulai hitung idle
+      menuIndex = index;
+
+      buttons.forEach(b => b.classList.remove("highlight"));
+      btn.classList.add("highlight");
+    });
+  });
+
+  // ---------------------------
+  //  FUNGSI TAMPILKAN MENU
+  // ---------------------------
   function showMenu(menuType) {
+
+    if (!autoShowActive) return;   // kalau autoshow mati, jangan tampilkan
 
     buttons.forEach(btn => btn.classList.remove("highlight"));
     buttons[menuIndex].classList.add("highlight");
@@ -159,7 +206,7 @@ function autoShowDashboardOneByOne() {
       const container = document.getElementById("chartContainer");
       const cards = Array.from(container.querySelectorAll(".card"));
 
-      // Hilangkan card “lihat material kosong” hanya saat autoshow
+      // Hilangkan card “material kosong” dari autoshow
       const filteredCards = cards.filter(c => {
         const title = c.querySelector("h3")?.innerText.toLowerCase() || "";
         return !title.includes("material kosong");
@@ -176,7 +223,12 @@ function autoShowDashboardOneByOne() {
         return;
       }
 
+      // ---------------------------
+      //  SHOW CARD AUTOMATIS
+      // ---------------------------
       function showCard() {
+
+        if (!autoShowActive) return;   // jika autoshow dimatikan user
 
         filteredCards.forEach(c => {
           c.style.display = "none";
@@ -187,16 +239,16 @@ function autoShowDashboardOneByOne() {
         card.style.display = "block";
         card.style.opacity = "0";
 
-        // class zoom (bukan fullscreen)
         card.classList.add("autoshow-zoom");
 
-        // fade in
         requestAnimationFrame(() => {
           card.style.opacity = "1";
         });
 
-        // setelah 3.6 detik → pindah card
         setTimeout(() => {
+
+          if (!autoShowActive) return;   // cek lagi
+
           card.classList.remove("autoshow-zoom");
           card.style.opacity = "0";
 
@@ -216,12 +268,20 @@ function autoShowDashboardOneByOne() {
     });
   }
 
+  // ---------------------------
+  //  PINDAH MENU
+  // ---------------------------
   function nextMenu() {
+    if (!autoShowActive) return;  // autoshow berhenti total
     menuIndex = (menuIndex + 1) % menuTypes.length;
     showMenu(menuTypes[menuIndex]);
   }
 
+  // ---------------------------
+  //  JALANKAN AUTOSHOW PERTAMA KALI
+  // ---------------------------
   showMenu(menuTypes[menuIndex]);
 }
 
 window.addEventListener("load", autoShowDashboardOneByOne);
+
