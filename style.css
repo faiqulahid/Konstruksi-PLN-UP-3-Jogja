@@ -46,7 +46,7 @@ body {
   background: #005b91;
 }
 
-/* Highlight untuk autoshow */
+/* Highlight autoshow */
 @keyframes pulseMove {
   0%   { transform: translateY(0) scale(1);   box-shadow: 0 0 5px #FFD700; }
   25%  { transform: translateY(-5px) scale(1.05); box-shadow: 0 0 15px #FFD700; }
@@ -96,8 +96,7 @@ body {
 }
 
 /* =========================================================
-   AUTOSHOW MODE — FULLSCREEN STYLE
-   (SESUAI GAMBAR YANG KAMU KIRIM)
+   AUTOSHOW MODE — FULLSCREEN
    ========================================================= */
 .autoshow-zoom {
   position: relative;
@@ -114,7 +113,7 @@ body {
   z-index: 999;
 }
 
-/* Judul & isi card autoshow diperbesar */
+/* Text autoshow diperbesar */
 .autoshow-zoom h3 {
   font-size: 5em !important;
   font-weight: bold;
@@ -127,7 +126,7 @@ body {
 }
 
 /* =========================================================
-   AGAR card autoshow benar-benar di tengah
+   AGAR CARD AUTOSHOW TEPAT DI TENGAH
    ========================================================= */
 #chartContainer .card {
   display: block;
@@ -138,4 +137,11 @@ body {
   justify-content: center;
   align-items: center;
   flex-direction: column;
+}
+
+/* =========================================================
+   BUTTON “LIHAT MATERIAL KOSONG” DISEMBUNYIKAN SAAT AUTOSHOW
+   ========================================================= */
+.autoshow-hide-empty-btn #emptyMaterialBtn {
+  display: none !important;
 }
